@@ -49,9 +49,11 @@ interface Message {
 
 function TestingPageContent() {
   const searchParams = useSearchParams()
-  const { puterReady, chatWithPuter } = usePuter()
+  const { puterReady, chatWithPuter, generateImage } = usePuter()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const uploadedFilePaths = useRef<string[]>([])
+  const [isDragging, setIsDragging] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   
   // Get prompt and model from URL params
   const initialPrompt = searchParams.get('prompt') || ''
@@ -67,7 +69,8 @@ function TestingPageContent() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [showModelSelector, setShowModelSelector] = useState(false)
   const [attachedFiles, setAttachedFiles] = useState<File[]>([])
-  const [filePreview, setFilePreview] = useState<{ name: string; url: string; type: string; path?: string }[]>([])
+  const [filePreview, setFilePreview] = useState<{ name: string; url: string; type: string; path?: string; loading?: boolean }[]>([])
+  const [uploadingFiles, setUploadingFiles] = useState(false)
   
   // Authentication and subscription
   const [user, setUser] = useState<any>(null)
@@ -80,16 +83,17 @@ function TestingPageContent() {
   const [showSettings, setShowSettings] = useState(false)
 
   const models = [
-    { id: "gpt-4o", name: "GPT-4o", description: "OpenAI's most capable", multimodal: true },
-    { id: "gpt-4o-mini", name: "GPT-4o Mini", description: "Fast and efficient", multimodal: true },
-    { id: "gpt-5-chat-latest", name: "GPT-5 Chat", description: "Latest GPT model", multimodal: true },
-    { id: "claude-opus-4-latest", name: "Claude Opus 4", description: "Most powerful Claude", multimodal: true },
-    { id: "claude-sonnet-4-latest", name: "Claude Sonnet 4", description: "Balanced Claude", multimodal: true },
-    { id: "claude-3-5-sonnet-latest", name: "Claude 3.5 Sonnet", description: "Latest Sonnet", multimodal: true },
-    { id: "grok-3", name: "Grok 3", description: "Fast responses", multimodal: false },
-    { id: "mistral-large-latest", name: "Mistral Large", description: "Powerful Mistral", multimodal: false },
-    { id: "mistral-medium-latest", name: "Mistral Medium", description: "Balanced Mistral", multimodal: false },
-    { id: "gemini-1.5-flash", name: "Gemini 1.5 Flash", description: "Google's fast model", multimodal: true }
+    { id: "gpt-4o", name: "GPT-4o", description: "OpenAI's most capable", multimodal: true, type: "chat" },
+    { id: "gpt-4o-mini", name: "GPT-4o Mini", description: "Fast and efficient", multimodal: true, type: "chat" },
+    { id: "gpt-5-chat-latest", name: "GPT-5 Chat", description: "Latest GPT model", multimodal: true, type: "chat" },
+    { id: "claude-opus-4-latest", name: "Claude Opus 4", description: "Most powerful Claude", multimodal: true, type: "chat" },
+    { id: "claude-sonnet-4-latest", name: "Claude Sonnet 4", description: "Balanced Claude", multimodal: true, type: "chat" },
+    { id: "claude-3-5-sonnet-latest", name: "Claude 3.5 Sonnet", description: "Latest Sonnet", multimodal: true, type: "chat" },
+    { id: "dall-e-3", name: "DALL-E 3", description: "OpenAI's image generator", multimodal: false, type: "image" },
+    { id: "grok-3", name: "Grok 3", description: "Fast responses", multimodal: false, type: "chat" },
+    { id: "mistral-large-latest", name: "Mistral Large", description: "Powerful Mistral", multimodal: false, type: "chat" },
+    { id: "mistral-medium-latest", name: "Mistral Medium", description: "Balanced Mistral", multimodal: false, type: "chat" },
+    { id: "gemini-1.5-flash", name: "Gemini 1.5 Flash", description: "Google's fast model", multimodal: true, type: "chat" }
   ]
   
   // Check if current model supports files
@@ -178,27 +182,84 @@ function TestingPageContent() {
 
     setMessages(prev => [...prev, userMessage])
     setUserInput("")
+    
+    // Store the current file preview for cleanup later
+    const currentFiles = [...filePreview]
+    
     setAttachedFiles([])
     setFilePreview([])
     setIsGenerating(true)
 
     try {
-      // Use the new chat function for proper conversational responses
-      const response = await chatWithPuter(
-        systemPrompt,
-        userInput,
-        selectedModel,
-        {
-          temperature,
-          maxTokens
+      let response
+      let assistantMessage: Message
+      
+      // Check if this is an image generation model
+      const currentModel = models.find(m => m.id === selectedModel)
+      const isImageModel = currentModel?.type === 'image'
+      
+      if (isImageModel) {
+        // Show generating message first (with unique ID)
+        const generatingMessageId = `generating-${Date.now()}-${Math.random()}`
+        const generatingMessage: Message = {
+          id: generatingMessageId,
+          role: 'assistant',
+          content: '🎨 Generating image...',
+          timestamp: new Date()
         }
-      )
-
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: typeof response === 'string' ? response : JSON.stringify(response),
-        timestamp: new Date()
+        setMessages(prev => [...prev, generatingMessage])
+        
+        try {
+          // Generate image with DALL-E
+          const imagePrompt = systemPrompt ? `${systemPrompt}\n\n${userInput}` : userInput
+          response = await generateImage(imagePrompt, selectedModel)
+        } catch (error) {
+          console.error('Image generation failed:', error)
+          response = null
+        }
+        
+        // Remove generating message
+        setMessages(prev => prev.filter(m => m.id !== generatingMessageId))
+        
+        // Create message with image
+        if (response) {
+          assistantMessage = {
+            id: `response-${Date.now()}-${Math.random()}`,
+            role: 'assistant',
+            content: 'Generated image:',
+            timestamp: new Date(),
+            attachments: [{
+              type: 'image',
+              name: 'generated-image.png',
+              url: response
+            }]
+          }
+        } else {
+          assistantMessage = {
+            id: `error-${Date.now()}-${Math.random()}`,
+            role: 'assistant',
+            content: 'Failed to generate image. Please try again or use a different model.',
+            timestamp: new Date()
+          }
+        }
+      } else {
+        // Use the chat function for text models
+        response = await chatWithPuter(
+          systemPrompt,
+          userInput,
+          selectedModel,
+          {
+            temperature,
+            maxTokens
+          }
+        )
+        
+        assistantMessage = {
+          id: `response-${Date.now()}-${Math.random()}`,
+          role: 'assistant',
+          content: typeof response === 'string' ? response : JSON.stringify(response),
+          timestamp: new Date()
+        }
       }
 
       setMessages(prev => [...prev, assistantMessage])
@@ -210,21 +271,29 @@ function TestingPageContent() {
         setRateLimit(limit)
       }
       
-      // Clean up uploaded files after successful response
-      if (uploadedFilePaths.current.length > 0) {
-        for (const path of uploadedFilePaths.current) {
-          try {
-            await fetch('/api/files/upload', {
-              method: 'DELETE',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ path })
-            })
-          } catch (error) {
-            console.error('Error cleaning up file:', error)
+      // Schedule file deletion after 2 hours (don't wait for it)
+      if (currentFiles.length > 0) {
+        setTimeout(async () => {
+          console.log('Auto-deleting files after 2 hours')
+          for (const file of currentFiles) {
+            if (file.path) {
+              try {
+                await fetch('/api/files/upload', {
+                  method: 'DELETE',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ path: file.path })
+                })
+                console.log('Deleted file:', file.path)
+              } catch (error) {
+                console.error('Error auto-deleting file:', error)
+              }
+            }
           }
-        }
-        uploadedFilePaths.current = []
+        }, 2 * 60 * 60 * 1000) // 2 hours in milliseconds
       }
+      
+      // Clear the upload paths tracker
+      uploadedFilePaths.current = []
     } catch (error) {
       console.error('Error generating response:', error)
       const errorMessage: Message = {
@@ -289,10 +358,10 @@ function TestingPageContent() {
       return
     }
     
-    // Limit file size to 10MB
-    const oversizedFiles = validFiles.filter(file => file.size > 10 * 1024 * 1024)
+    // Limit file size to 50MB
+    const oversizedFiles = validFiles.filter(file => file.size > 50 * 1024 * 1024)
     if (oversizedFiles.length > 0) {
-      alert('Files must be under 10MB')
+      alert('Files must be under 50MB')
       return
     }
     
@@ -302,9 +371,18 @@ function TestingPageContent() {
     }
     
     setAttachedFiles(validFiles)
+    setUploadingFiles(true)
     
-    // Upload files to Supabase and create previews
-    const previews = await Promise.all(validFiles.map(async (file) => {
+    // Create immediate local previews with loading state
+    const localPreviews = validFiles.map(file => {
+      const url = URL.createObjectURL(file)
+      const type = file.type.startsWith('video/') ? 'video' : 'image'
+      return { name: file.name, url, type, loading: true }
+    })
+    setFilePreview(localPreviews)
+    
+    // Upload files to Supabase and update previews
+    const previews = await Promise.all(validFiles.map(async (file, index) => {
       const formData = new FormData()
       formData.append('file', file)
       formData.append('userId', user.id)
@@ -321,17 +399,18 @@ function TestingPageContent() {
         uploadedFilePaths.current.push(path)
         
         const type = file.type.startsWith('video/') ? 'video' : 'image'
-        return { name: file.name, url, type, path }
+        // Clean up the local preview URL
+        URL.revokeObjectURL(localPreviews[index].url)
+        return { name: file.name, url, type, path, loading: false }
       } catch (error) {
         console.error('Upload error:', error)
-        // Fallback to local preview
-        const url = URL.createObjectURL(file)
-        const type = file.type.startsWith('video/') ? 'video' : 'image'
-        return { name: file.name, url, type }
+        // Keep local preview on error
+        return { ...localPreviews[index], loading: false }
       }
     }))
     
     setFilePreview(previews)
+    setUploadingFiles(false)
   }
   
   const removeFile = async (index: number) => {
@@ -659,7 +738,55 @@ function TestingPageContent() {
           </div>
 
           {/* Right Panel - Chat Interface */}
-          <div className="lg:col-span-2 flex flex-col h-[700px] rounded-lg border bg-card">
+          <div 
+            className="lg:col-span-2 flex flex-col h-[700px] rounded-lg border bg-card relative"
+            onDragOver={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              if (isMultimodal && !isGenerating && user) {
+                setIsDragging(true)
+              }
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              // Only set dragging to false if we're leaving the entire chat container
+              const rect = e.currentTarget.getBoundingClientRect()
+              const x = e.clientX
+              const y = e.clientY
+              if (x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom) {
+                setIsDragging(false)
+              }
+            }}
+            onDrop={async (e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              setIsDragging(false)
+              
+              if (!isMultimodal || isGenerating || !user) return
+              
+              const files = Array.from(e.dataTransfer.files)
+              if (files.length > 0 && fileInputRef.current) {
+                // Create a new FileList-like object
+                const dt = new DataTransfer()
+                files.forEach(file => dt.items.add(file))
+                fileInputRef.current.files = dt.files
+                
+                // Trigger the file upload handler
+                await handleFileUpload({ target: { files: dt.files } } as any)
+              }
+            }}
+          >
+            {/* Drag overlay for entire chat */}
+            {isDragging && (
+              <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary rounded-lg flex items-center justify-center z-50 pointer-events-none">
+                <div className="text-center bg-background/95 p-6 rounded-lg">
+                  <Paperclip className="h-12 w-12 mx-auto mb-2 text-primary animate-bounce" />
+                  <p className="text-lg font-medium">Drop your files here</p>
+                  <p className="text-sm text-muted-foreground">Images and videos up to 50MB</p>
+                </div>
+              </div>
+            )}
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {messages.length === 0 ? (
@@ -743,7 +870,7 @@ function TestingPageContent() {
             </div>
 
             {/* Input Area */}
-            <div className="border-t">
+            <div className="border-t relative">
               {/* File Preview Area */}
               {filePreview.length > 0 && (
                 <div className="p-4 pb-2 flex gap-2 flex-wrap">
@@ -754,29 +881,49 @@ function TestingPageContent() {
                           <img 
                             src={file.url} 
                             alt={file.name}
-                            className="h-20 w-20 object-cover rounded-lg border"
+                            className={`h-20 w-20 object-cover rounded-lg border ${
+                              file.loading ? 'opacity-50' : ''
+                            }`}
                           />
-                          <button
-                            onClick={() => removeFile(index)}
-                            className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
+                          {file.loading && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                            </div>
+                          )}
+                          {!file.loading && (
+                            <button
+                              onClick={() => removeFile(index)}
+                              className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          )}
                         </div>
                       ) : (
                         <div className="relative">
-                          <div className="h-20 w-20 bg-secondary rounded-lg border flex items-center justify-center">
-                            <FileVideo className="h-8 w-8 text-muted-foreground" />
+                          <div className={`h-20 w-20 bg-secondary rounded-lg border flex items-center justify-center ${
+                            file.loading ? 'opacity-50' : ''
+                          }`}>
+                            {file.loading ? (
+                              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                            ) : (
+                              <FileVideo className="h-8 w-8 text-muted-foreground" />
+                            )}
                           </div>
-                          <button
-                            onClick={() => removeFile(index)}
-                            className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
+                          {!file.loading && (
+                            <button
+                              onClick={() => removeFile(index)}
+                              className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          )}
                         </div>
                       )}
                       <p className="text-xs mt-1 truncate w-20">{file.name}</p>
+                      {file.loading && (
+                        <p className="text-xs text-muted-foreground">Uploading...</p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -788,6 +935,7 @@ function TestingPageContent() {
                   {isMultimodal && (
                     <div className="relative">
                       <input
+                        ref={fileInputRef}
                         type="file"
                         id="file-upload"
                         multiple
@@ -799,7 +947,7 @@ function TestingPageContent() {
                       <label
                         htmlFor="file-upload"
                         className={`inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 h-10 px-4 py-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground cursor-pointer ${
-                          isGenerating || !user ? 'opacity-50 cursor-not-allowed' : ''
+                          isGenerating || !user || uploadingFiles ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
                       >
                         <Paperclip className="h-4 w-4" />
@@ -811,7 +959,13 @@ function TestingPageContent() {
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder={isMultimodal ? "Type your message or attach files..." : "Type your message..."}
+                    placeholder={
+                      models.find(m => m.id === selectedModel)?.type === 'image' 
+                        ? "Describe the image you want to generate..." 
+                        : isMultimodal 
+                        ? "Type your message or attach files..." 
+                        : "Type your message..."
+                    }
                     className="flex-1 min-h-[60px] max-h-[120px]"
                     disabled={isGenerating || !user}
                   />

@@ -63,7 +63,7 @@ export default function HistoryPage() {
       // Convert Supabase format to our format
       const formattedHistory = prompts.map(p => ({
         ...p,
-        prompt: p.content,
+        prompt: p.prompt || p.content || '',  // Use prompt field from DB
         timestamp: p.created_at ? new Date(p.created_at) : new Date(),
         userInput: p.user_input
       }))

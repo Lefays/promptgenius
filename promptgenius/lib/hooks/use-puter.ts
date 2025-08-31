@@ -207,6 +207,102 @@ This will give you access to all AI models with generous free limits.`)
     }
   }
 
+  const generateImage = async (
+    prompt: string,
+    model: string = 'dall-e-3'
+  ) => {
+    if (!puterReady || !window.puter) {
+      throw new Error('Puter is not ready')
+    }
+
+    setLoading(true)
+    
+    try {
+      console.log('Generating image with prompt:', prompt)
+      console.log('Using model:', model)
+      
+      // Try different methods to generate image
+      let response
+      
+      // Method 1: Try txt2img with model parameter (with timeout)
+      try {
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Image generation timeout')), 30000) // 30 second timeout
+        )
+        
+        const imagePromise = window.puter.ai.txt2img(prompt, {
+          model: model
+        })
+        
+        response = await Promise.race([imagePromise, timeoutPromise])
+        console.log('txt2img response:', response)
+      } catch (e) {
+        console.log('txt2img failed, trying alternative:', e)
+      }
+      
+      // If response is empty or invalid, try without model parameter
+      if (!response || (typeof response === 'object' && Object.keys(response).length === 0)) {
+        console.log('Trying txt2img without model parameter')
+        response = await window.puter.ai.txt2img(prompt)
+        console.log('Alternative response:', response)
+      }
+      
+      // If still no valid response, try with 'dall-e' instead of 'dall-e-3'
+      if (!response || (typeof response === 'object' && Object.keys(response).length === 0)) {
+        console.log('Trying with dall-e model name')
+        response = await window.puter.ai.txt2img(prompt, {
+          model: 'dall-e'
+        })
+        console.log('dall-e response:', response)
+      }
+      
+      // Handle different response formats
+      if (typeof response === 'string') {
+        // Check if it's an HTML img tag with base64 data
+        if (response.includes('<img') && response.includes('data:image')) {
+          // Extract the base64 data URL from the img tag
+          const srcMatch = response.match(/src="([^"]+)"/);
+          if (srcMatch && srcMatch[1]) {
+            console.log('Extracted image URL from HTML tag')
+            return srcMatch[1]
+          }
+        }
+        // Otherwise return as is (might be a URL or base64 already)
+        return response
+      } else if (response?.url) {
+        return response.url
+      } else if (response?.image) {
+        return response.image
+      } else if (response?.data) {
+        return response.data
+      } else if (Array.isArray(response) && response.length > 0) {
+        // Handle array of images
+        const firstImage = response[0]
+        if (typeof firstImage === 'string') {
+          // Check if it's an HTML img tag
+          if (firstImage.includes('<img') && firstImage.includes('data:image')) {
+            const srcMatch = firstImage.match(/src="([^"]+)"/);
+            if (srcMatch && srcMatch[1]) {
+              return srcMatch[1]
+            }
+          }
+          return firstImage
+        }
+        if (firstImage?.url) return firstImage.url
+        if (firstImage?.image) return firstImage.image
+        return firstImage
+      } else {
+        console.error('Unexpected image response format:', response)
+        return null
+      }
+    } catch (error) {
+      console.error('Image generation error:', error)
+      throw error
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const chatWithPuter = async (
     systemPrompt: string,
     userMessage: string,
@@ -299,6 +395,7 @@ Please provide your response following the instructions above:`
     loading,
     generateWithPuter,
     chatWithPuter,
+    generateImage,
     signInToPuter,
     getPuterUser
   }

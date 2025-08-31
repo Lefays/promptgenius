@@ -14,7 +14,8 @@ import {
   LayoutDashboard,
   CreditCard,
   Bot,
-  User as UserIcon
+  User as UserIcon,
+  AlertCircle
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"

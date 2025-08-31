@@ -3,8 +3,7 @@ import { supabase } from './client'
 export interface Prompt {
   id?: string
   user_id?: string
-  title: string
-  content: string
+  prompt: string  // Changed from content to match DB
   user_input?: string
   model: string
   style?: string
@@ -13,6 +12,9 @@ export interface Prompt {
   max_tokens?: number
   created_at?: string
   updated_at?: string
+  // Keep these for compatibility
+  title?: string
+  content?: string
 }
 
 export async function savePrompt(prompt: Omit<Prompt, 'id' | 'user_id' | 'created_at' | 'updated_at'>) {
@@ -20,12 +22,19 @@ export async function savePrompt(prompt: Omit<Prompt, 'id' | 'user_id' | 'create
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('User not authenticated')
 
+    // Map fields to match database columns
+    const dbPrompt = {
+      user_id: user.id,
+      prompt: prompt.prompt || prompt.content || '',  // Use prompt or content
+      model: prompt.model,
+      user_input: prompt.user_input,
+      style: prompt.style,
+      // Note: format, temperature, max_tokens don't exist in DB yet
+    }
+
     const { data, error } = await supabase
       .from('prompts')
-      .insert({
-        ...prompt,
-        user_id: user.id
-      })
+      .insert(dbPrompt)
       .select()
       .single()
 

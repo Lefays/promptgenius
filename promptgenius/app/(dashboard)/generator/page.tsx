@@ -299,14 +299,11 @@ export default function GeneratorPage() {
       // Also save to Supabase if user is authenticated
       if (user) {
         await savePrompt({
-          title: userInput.slice(0, 100), // Use first 100 chars as title
-          content: promptText,
+          prompt: promptText,  // Use prompt field to match DB
           user_input: userInput,
           model: selectedModel,
           style: advancedOptions.style,
-          format: advancedOptions.format,
-          temperature: advancedOptions.temperature,
-          max_tokens: advancedOptions.maxTokens
+          // Note: format, temperature, max_tokens columns don't exist in DB yet
         })
       }
       
