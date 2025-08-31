@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-// import { createServerClient } from '@/lib/supabase/server' // Temporarily disabled
+import { createClient } from '@supabase/supabase-js'
 import { 
   generateGeminiPrompt, 
   generateLlamaPrompt, 
@@ -8,6 +8,12 @@ import {
 } from './helpers'
 import { selectBestTemplate, promptTemplates, enhancePromptWithTechniques } from './prompt-templates'
 import { AIProviderService, createSystemPrompt, availableModels } from '@/lib/api/providers'
+
+// Create Supabase client for server-side operations
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 export async function POST(request: NextRequest) {
   try {
@@ -89,9 +95,35 @@ Please provide a comprehensive response following the guidelines above.`
 
     // Save to Supabase database - skip if there's an error since it's optional
     try {
-      // We'll skip database save for now due to type issues
-      // This can be enabled once the database schema is updated
-      console.log('Database save skipped - prompt generated successfully')
+      // Get the authenticated user from the request headers
+      const authHeader = request.headers.get('authorization')
+      if (authHeader) {
+        const token = authHeader.replace('Bearer ', '')
+        const { data: { user } } = await supabase.auth.getUser(token)
+        
+        if (user) {
+          // Save the prompt to the database
+          const { error } = await supabase
+            .from('prompts')
+            .insert({
+              user_id: user.id,
+              title: userInput ? userInput.substring(0, 100) : 'AI Prompt',
+              content: optimizedPrompt,
+              user_input: userInput,
+              model: model,
+              style: style,
+              format: format,
+              temperature: temperature,
+              max_tokens: maxTokens
+            })
+          
+          if (error) {
+            console.error('Database save error:', error)
+          } else {
+            console.log('Prompt saved to database successfully')
+          }
+        }
+      }
     } catch (dbError) {
       console.error('Failed to save prompt to database:', dbError)
       // Don't fail the request if database save fails

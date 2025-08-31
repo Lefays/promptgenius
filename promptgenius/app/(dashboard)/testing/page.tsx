@@ -51,6 +51,7 @@ function TestingPageContent() {
   const searchParams = useSearchParams()
   const { puterReady, chatWithPuter } = usePuter()
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const uploadedFilePaths = useRef<string[]>([])
   
   // Get prompt and model from URL params
   const initialPrompt = searchParams.get('prompt') || ''
@@ -66,7 +67,7 @@ function TestingPageContent() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [showModelSelector, setShowModelSelector] = useState(false)
   const [attachedFiles, setAttachedFiles] = useState<File[]>([])
-  const [filePreview, setFilePreview] = useState<{ name: string; url: string; type: string }[]>([])
+  const [filePreview, setFilePreview] = useState<{ name: string; url: string; type: string; path?: string }[]>([])
   
   // Authentication and subscription
   const [user, setUser] = useState<any>(null)
@@ -208,6 +209,22 @@ function TestingPageContent() {
         const limit = checkRateLimit(user.id, userTier)
         setRateLimit(limit)
       }
+      
+      // Clean up uploaded files after successful response
+      if (uploadedFilePaths.current.length > 0) {
+        for (const path of uploadedFilePaths.current) {
+          try {
+            await fetch('/api/files/upload', {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ path })
+            })
+          } catch (error) {
+            console.error('Error cleaning up file:', error)
+          }
+        }
+        uploadedFilePaths.current = []
+      }
     } catch (error) {
       console.error('Error generating response:', error)
       const errorMessage: Message = {
@@ -233,15 +250,31 @@ function TestingPageContent() {
     navigator.clipboard.writeText(content)
   }
 
-  const clearConversation = () => {
+  const clearConversation = async () => {
     if (confirm('Are you sure you want to clear the conversation?')) {
+      // Clean up any remaining uploaded files
+      if (uploadedFilePaths.current.length > 0) {
+        for (const path of uploadedFilePaths.current) {
+          try {
+            await fetch('/api/files/upload', {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ path })
+            })
+          } catch (error) {
+            console.error('Error cleaning up file:', error)
+          }
+        }
+        uploadedFilePaths.current = []
+      }
+      
       setMessages([])
       setAttachedFiles([])
       setFilePreview([])
     }
   }
   
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     
     // Filter for video and image files only
@@ -263,23 +296,66 @@ function TestingPageContent() {
       return
     }
     
+    if (!user) {
+      alert('Please sign in to upload files')
+      return
+    }
+    
     setAttachedFiles(validFiles)
     
-    // Create previews
-    const previews = validFiles.map(file => {
-      const url = URL.createObjectURL(file)
-      const type = file.type.startsWith('video/') ? 'video' : 'image'
-      return { name: file.name, url, type }
-    })
+    // Upload files to Supabase and create previews
+    const previews = await Promise.all(validFiles.map(async (file) => {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('userId', user.id)
+      
+      try {
+        const response = await fetch('/api/files/upload', {
+          method: 'POST',
+          body: formData
+        })
+        
+        if (!response.ok) throw new Error('Upload failed')
+        
+        const { url, path } = await response.json()
+        uploadedFilePaths.current.push(path)
+        
+        const type = file.type.startsWith('video/') ? 'video' : 'image'
+        return { name: file.name, url, type, path }
+      } catch (error) {
+        console.error('Upload error:', error)
+        // Fallback to local preview
+        const url = URL.createObjectURL(file)
+        const type = file.type.startsWith('video/') ? 'video' : 'image'
+        return { name: file.name, url, type }
+      }
+    }))
+    
     setFilePreview(previews)
   }
   
-  const removeFile = (index: number) => {
+  const removeFile = async (index: number) => {
     const newFiles = attachedFiles.filter((_, i) => i !== index)
     const newPreviews = filePreview.filter((_, i) => i !== index)
     
-    // Clean up object URLs
-    URL.revokeObjectURL(filePreview[index].url)
+    // Clean up Supabase file if it exists
+    const fileToRemove = filePreview[index]
+    if (fileToRemove.path) {
+      try {
+        await fetch('/api/files/upload', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: fileToRemove.path })
+        })
+        // Remove from tracking
+        uploadedFilePaths.current = uploadedFilePaths.current.filter(p => p !== fileToRemove.path)
+      } catch (error) {
+        console.error('Error deleting file:', error)
+      }
+    } else {
+      // Clean up object URLs for local files
+      URL.revokeObjectURL(filePreview[index].url)
+    }
     
     setAttachedFiles(newFiles)
     setFilePreview(newPreviews)

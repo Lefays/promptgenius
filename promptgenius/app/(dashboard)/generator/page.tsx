@@ -299,13 +299,19 @@ export default function GeneratorPage() {
       
       // Only override for specific Puter error patterns we haven't already handled
       if (error?.error?.delegate === 'usage-limited-chat') {
-        errorMessage = `This model has reached its usage limit. Please try one of these alternatives:
-• GPT-4o or GPT-4o Mini
-• Claude models
-• Mistral models
-• Gemini 1.5 Flash
+        errorMessage = `⚠️ Rate Limit Reached for ${selectedModel}
 
-These models typically have higher or no usage limits.`
+This model has reached its usage limit. You can:
+
+1. Try a different model:
+   • GPT-4o Mini (highest limits)
+   • Claude 3.5 Sonnet 
+   • Mistral Medium
+   • Gemini 1.5 Flash
+
+2. Wait ~15-60 minutes for the limit to reset
+
+3. Sign in to Puter for higher limits (if not already signed in)`
       } else if (error instanceof Error) {
         errorMessage = error.message
       }

@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { getPromptStats, getPrompts } from "@/lib/supabase/prompts"
+import { supabase } from "@/lib/supabase/client"
 import { 
   Sparkles, 
   History, 
@@ -34,12 +36,53 @@ export default function DashboardPage() {
     favoriteModel: "GPT-4"
   })
   const [recentPrompts, setRecentPrompts] = useState<any[]>([])
+  const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    loadDashboardData()
+    checkUserAndLoadData()
   }, [])
+  
+  const checkUserAndLoadData = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    setUser(user)
+    if (user) {
+      await loadDashboardDataFromSupabase()
+    } else {
+      loadDashboardDataFromLocal()
+    }
+  }
 
-  const loadDashboardData = () => {
+  const loadDashboardDataFromSupabase = async () => {
+    try {
+      // Get stats from Supabase
+      const supabaseStats = await getPromptStats()
+      
+      // Get recent prompts
+      const prompts = await getPrompts(5)
+      
+      // Find most used model from recent prompts
+      const modelCounts: { [key: string]: number } = {}
+      prompts.forEach((p: any) => {
+        modelCounts[p.model] = (modelCounts[p.model] || 0) + 1
+      })
+      const favoriteModel = Object.entries(modelCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "GPT-4"
+      
+      setStats({
+        total: supabaseStats.total,
+        today: supabaseStats.today,
+        thisWeek: supabaseStats.thisWeek,
+        favoriteModel
+      })
+      
+      setRecentPrompts(prompts.slice(0, 3))
+    } catch (error) {
+      console.error('Error loading from Supabase:', error)
+      // Fallback to local storage
+      loadDashboardDataFromLocal()
+    }
+  }
+  
+  const loadDashboardDataFromLocal = () => {
     // Load from localStorage
     const savedHistory = localStorage.getItem('prompt_history')
     if (savedHistory) {
