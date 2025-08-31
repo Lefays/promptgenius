@@ -15,6 +15,7 @@ import {
   formatResetTime,
   type SubscriptionTier 
 } from "@/lib/subscription"
+import { savePrompt } from "@/lib/supabase/prompts"
 import { 
   Sparkles, 
   Upload, 
@@ -35,6 +36,7 @@ import {
 interface GeneratedPrompt {
   id: string
   prompt: string
+  content?: string // For compatibility with Supabase
   model: string
   user_input: string | null
   style: string | null
@@ -44,6 +46,7 @@ interface GeneratedPrompt {
   has_image: boolean
   created_at: string
   updated_at: string
+  timestamp?: Date | string // For history page compatibility
 }
 
 export default function GeneratorPage() {
@@ -149,7 +152,8 @@ export default function GeneratorPage() {
         // Ensure proper format
         const formatted = parsed.map((item: any) => ({
           id: item.id || Date.now().toString(),
-          prompt: item.prompt,
+          prompt: item.prompt || item.content || '',
+          content: item.content || item.prompt || '',
           model: item.model,
           user_input: item.user_input || null,
           style: item.style || null,
@@ -158,7 +162,8 @@ export default function GeneratorPage() {
           max_tokens: item.max_tokens || item.maxTokens || null,
           has_image: item.has_image || false,
           created_at: item.created_at || item.timestamp || new Date().toISOString(),
-          updated_at: item.updated_at || new Date().toISOString()
+          updated_at: item.updated_at || new Date().toISOString(),
+          timestamp: item.timestamp || item.created_at || new Date()
         }))
         setHistory(formatted)
       } catch (e) {
@@ -267,6 +272,7 @@ export default function GeneratorPage() {
       const newPrompt: GeneratedPrompt = {
         id: Date.now().toString(),
         prompt: promptText,
+        content: promptText, // Add content field for compatibility
         model: selectedModel,
         user_input: userInput,
         style: advancedOptions.style,
@@ -275,7 +281,8 @@ export default function GeneratorPage() {
         max_tokens: advancedOptions.maxTokens,
         has_image: !!uploadedImage,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        timestamp: new Date() // Add timestamp for history page
       }
       
       const existingHistory = localStorage.getItem('prompt_history')
@@ -288,6 +295,20 @@ export default function GeneratorPage() {
       localHistory.unshift(newPrompt)
       localHistory = localHistory.slice(0, 50)
       localStorage.setItem('prompt_history', JSON.stringify(localHistory))
+      
+      // Also save to Supabase if user is authenticated
+      if (user) {
+        await savePrompt({
+          title: userInput.slice(0, 100), // Use first 100 chars as title
+          content: promptText,
+          user_input: userInput,
+          model: selectedModel,
+          style: advancedOptions.style,
+          format: advancedOptions.format,
+          temperature: advancedOptions.temperature,
+          max_tokens: advancedOptions.maxTokens
+        })
+      }
       
       // Refresh history
       await loadHistoryFromSupabase()

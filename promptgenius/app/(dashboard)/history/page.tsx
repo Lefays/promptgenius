@@ -82,10 +82,13 @@ export default function HistoryPage() {
     if (savedHistory) {
       try {
         const parsed = JSON.parse(savedHistory)
-        // Ensure dates are properly formatted
+        // Ensure dates are properly formatted and handle both timestamp and created_at
         const historyWithDates = parsed.map((item: any) => ({
           ...item,
-          timestamp: typeof item.timestamp === 'string' ? new Date(item.timestamp) : item.timestamp
+          timestamp: item.timestamp 
+            ? (typeof item.timestamp === 'string' ? new Date(item.timestamp) : item.timestamp)
+            : (item.created_at ? new Date(item.created_at) : new Date()),
+          prompt: item.prompt || item.content || ''
         }))
         setHistory(historyWithDates)
       } catch (error) {
