@@ -89,7 +89,6 @@ function TestingPageContent() {
     { id: "claude-opus-4-latest", name: "Claude Opus 4", description: "Most powerful Claude", multimodal: true, type: "chat" },
     { id: "claude-sonnet-4-latest", name: "Claude Sonnet 4", description: "Balanced Claude", multimodal: true, type: "chat" },
     { id: "claude-3-5-sonnet-latest", name: "Claude 3.5 Sonnet", description: "Latest Sonnet", multimodal: true, type: "chat" },
-    { id: "dall-e-3", name: "DALL-E 3", description: "OpenAI's image generator", multimodal: false, type: "image" },
     { id: "grok-3", name: "Grok 3", description: "Fast responses", multimodal: false, type: "chat" },
     { id: "mistral-large-latest", name: "Mistral Large", description: "Powerful Mistral", multimodal: false, type: "chat" },
     { id: "mistral-medium-latest", name: "Mistral Medium", description: "Balanced Mistral", multimodal: false, type: "chat" },

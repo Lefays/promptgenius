@@ -215,45 +215,65 @@ This will give you access to all AI models with generous free limits.`)
       throw new Error('Puter is not ready')
     }
 
+    // Check if AI features are available
+    if (!window.puter.ai) {
+      throw new Error('Puter AI features not available')
+    }
+    
+    if (!window.puter.ai.txt2img) {
+      throw new Error('Puter txt2img function not available')
+    }
+
     setLoading(true)
     
     try {
       console.log('Generating image with prompt:', prompt)
       console.log('Using model:', model)
+      console.log('Puter AI available:', !!window.puter.ai)
+      console.log('txt2img function:', typeof window.puter.ai.txt2img)
       
       // Try different methods to generate image
       let response
       
-      // Method 1: Try txt2img with model parameter (with timeout)
+      // According to Puter docs, the simplest approach should work
+      console.log('Calling puter.ai.txt2img...')
+      
       try {
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Image generation timeout')), 30000) // 30 second timeout
-        )
-        
-        const imagePromise = window.puter.ai.txt2img(prompt, {
-          model: model
-        })
-        
-        response = await Promise.race([imagePromise, timeoutPromise])
-        console.log('txt2img response:', response)
-      } catch (e) {
-        console.log('txt2img failed, trying alternative:', e)
-      }
-      
-      // If response is empty or invalid, try without model parameter
-      if (!response || (typeof response === 'object' && Object.keys(response).length === 0)) {
-        console.log('Trying txt2img without model parameter')
+        // First try: Just the prompt (simplest form)
         response = await window.puter.ai.txt2img(prompt)
-        console.log('Alternative response:', response)
-      }
-      
-      // If still no valid response, try with 'dall-e' instead of 'dall-e-3'
-      if (!response || (typeof response === 'object' && Object.keys(response).length === 0)) {
-        console.log('Trying with dall-e model name')
-        response = await window.puter.ai.txt2img(prompt, {
-          model: 'dall-e'
-        })
-        console.log('dall-e response:', response)
+        console.log('txt2img response:', response)
+        
+        // If response is a promise, await it
+        if (response && typeof response.then === 'function') {
+          console.log('Response is a promise, awaiting...')
+          response = await response
+          console.log('Resolved response:', response)
+        }
+      } catch (e) {
+        console.error('txt2img error:', e)
+        
+        // Check if it's a Puter error response
+        if (e && typeof e === 'object') {
+          console.error('Error details:', {
+            success: e.success,
+            error: e.error,
+            message: e.error?.message,
+            code: e.error?.code
+          })
+          
+          // Handle specific error codes
+          if (e.error?.code === 'insufficient_funds') {
+            throw new Error('Image generation requires Puter credits. Please add funds to your Puter account or sign in with a funded account.')
+          } else if (e.error?.status === 402) {
+            throw new Error('This feature requires a paid Puter account. Please upgrade your account at puter.com')
+          }
+          
+          // Extract error message
+          const errorMsg = e.error?.message || e.message || 'Unknown error'
+          throw new Error(`Image generation failed: ${errorMsg}`)
+        } else {
+          throw new Error('Image generation failed - check console for details')
+        }
       }
       
       // Handle different response formats

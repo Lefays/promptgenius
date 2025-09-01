@@ -33,8 +33,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
       'gpt-4o-mini',
       'claude-3-5-sonnet-latest',
       'mistral-medium-latest',
-      'gemini-1.5-flash',
-      'dall-e-3'
+      'gemini-1.5-flash'
     ]
   },
   pro: {
@@ -60,8 +59,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
       'grok-3',
       'mistral-large-latest',
       'mistral-medium-latest',
-      'gemini-1.5-flash',
-      'dall-e-3'
+      'gemini-1.5-flash'
     ]
   },
   enterprise: {
@@ -88,8 +86,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
       'grok-3',
       'mistral-large-latest',
       'mistral-medium-latest',
-      'gemini-1.5-flash',
-      'dall-e-3'
+      'gemini-1.5-flash'
     ]
   }
 }
