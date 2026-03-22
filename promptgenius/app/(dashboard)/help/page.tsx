@@ -27,7 +27,7 @@ export default function HelpPage() {
     },
     {
       question: "What AI models are available?",
-      answer: "We support GPT-4.1, GPT-4.1 Mini, GPT-4o, Claude Sonnet 4, Claude 3.7 Sonnet, Claude 3.5 Haiku, Gemini 2.0 Flash, Gemini 2.5 Pro, Grok 3, Llama 4, Mistral Large, DeepSeek Chat, and DeepSeek R1. All models are available for free."
+      answer: "We support GPT-5.4, GPT-5.3, GPT-5 Nano/Mini, o3 Pro, Claude Opus 4.6, Claude Sonnet 4.6, Claude Opus 4.5, Claude Haiku 4.5, Gemini 3.1 Pro, Gemini 3.1 Flash Lite, Gemini 2.5 Pro, Grok 4.1, Grok 4, DeepSeek v3.2, DeepSeek R1, Mistral Medium 3.1, Mistral Small 4, and Qwen 3.5. All models are available for free."
     },
     {
       question: "Is PromptGenius really free?",
@@ -109,7 +109,7 @@ export default function HelpPage() {
     },
     {
       issue: "Generated prompt is cut off",
-      solution: "Increase the Max Tokens in Advanced Options. Some models have token limits - try GPT-4.1 or Claude Sonnet 4 for longer outputs.",
+      solution: "Increase the Max Tokens in Advanced Options. Some models have token limits - try GPT-5.4 or Claude Opus 4.6 for longer outputs.",
       icon: AlertCircle
     },
     {
@@ -121,33 +121,38 @@ export default function HelpPage() {
 
   const modelGuide = [
     {
-      model: "GPT-4.1 Mini",
-      bestFor: "Quick, efficient prompts for everyday tasks",
+      model: "GPT-5 Nano",
+      bestFor: "Fast default model for everyday tasks",
       tier: "Free"
     },
     {
-      model: "GPT-4o",
-      bestFor: "Complex reasoning and detailed instructions",
+      model: "GPT-5.4",
+      bestFor: "Most capable OpenAI model for complex tasks",
       tier: "Free"
     },
     {
-      model: "Claude Sonnet 4",
-      bestFor: "Creative writing and nuanced responses",
+      model: "Claude Opus 4.6",
+      bestFor: "Deep analysis and advanced reasoning",
       tier: "Free"
     },
     {
-      model: "Claude 3.7 Sonnet",
-      bestFor: "Advanced analysis and extended thinking",
+      model: "Claude Sonnet 4.6",
+      bestFor: "Fast and intelligent responses",
       tier: "Free"
     },
     {
-      model: "Gemini 2.0 Flash",
-      bestFor: "Fast responses with good accuracy",
+      model: "Gemini 3.1 Pro",
+      bestFor: "Large context and multimodal tasks",
       tier: "Free"
     },
     {
-      model: "Mistral Large",
-      bestFor: "Technical and coding tasks",
+      model: "Gemini 3.1 Flash Lite",
+      bestFor: "Fastest Google model for quick responses",
+      tier: "Free"
+    },
+    {
+      model: "DeepSeek v3.2",
+      bestFor: "Strong coding and technical tasks",
       tier: "Free"
     }
   ]
@@ -187,7 +192,7 @@ export default function HelpPage() {
                 <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center">3</span>
                 <div>
                   <p className="font-medium">Pick a model</p>
-                  <p className="text-sm text-muted-foreground">Select which AI model you want to generate your prompt with (GPT-4.1, Claude, Gemini, etc.)</p>
+                  <p className="text-sm text-muted-foreground">Select which AI model you want to generate your prompt with (GPT-5, Claude Opus, Gemini 3.1, etc.)</p>
                 </div>
               </li>
               <li className="flex gap-3">

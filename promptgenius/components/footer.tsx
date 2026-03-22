@@ -4,7 +4,38 @@ import { useState } from "react"
 import Link from "next/link"
 import Logo from "@/components/logo"
 import { Github, Twitter, Linkedin, Mail, ArrowUpRight } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+
 export default function Footer() {
+  const [email, setEmail] = useState('')
+  const [loading, setLoading] = useState(false)
+  const { toast } = useToast()
+
+  const handleNewsletter = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    
+    try {
+      // Here you would typically send to your newsletter API
+      // For now, we'll just show a success message
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      toast({
+        title: "Success!",
+        description: "You've been subscribed to our newsletter.",
+      })
+      
+      setEmail('')
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to subscribe. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
   const footerLinks = {
     Product: [
       { name: "Features", href: "/#features" },
@@ -27,6 +58,7 @@ export default function Footer() {
     Legal: [
       { name: "Privacy Policy", href: "/privacy" },
       { name: "Terms of Service", href: "/terms" },
+      { name: "Cookie Policy", href: "/cookies" },
       { name: "License", href: "/license" },
     ],
   }
@@ -92,6 +124,35 @@ export default function Footer() {
           </div>
         </div>
 
+        {/* Newsletter Section */}
+        <div className="py-8 border-t border-gray-100">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900">Stay up to date</h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Get the latest updates on new features and prompt engineering tips.
+              </p>
+            </div>
+            <form className="flex gap-2 w-full md:w-auto" onSubmit={handleNewsletter}>
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="px-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent flex-1 md:w-64"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 bg-black hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                disabled={loading}
+              >
+                {loading ? 'Subscribing...' : 'Subscribe'}
+              </button>
+            </form>
+          </div>
+        </div>
+
         {/* Bottom Bar */}
         <div className="py-6 border-t border-gray-100">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
@@ -104,6 +165,9 @@ export default function Footer() {
               </Link>
               <Link href="/terms" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                 Terms
+              </Link>
+              <Link href="/cookies" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                Cookies
               </Link>
               <Link href="/sitemap" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                 Sitemap

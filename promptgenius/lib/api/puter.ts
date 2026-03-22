@@ -13,6 +13,8 @@ interface PuterAuth {
 
 interface PuterAI {
   chat: (prompt: string | Array<{ role: string; content: string }>, options?: Record<string, unknown>) => Promise<PuterAIResponse | AsyncGenerator<PuterStreamPart>>;
+  txt2img?: (prompt: string, options?: Record<string, unknown>) => Promise<any>;
+  listModels?: (filter?: string) => Promise<any[]>;
 }
 
 interface Puter {
@@ -39,27 +41,31 @@ export interface PuterStreamPart {
 
 export const PUTER_MODELS = {
   // OpenAI Models
-  'gpt-4.1': { name: 'GPT-4.1', provider: 'OpenAI', description: 'Most capable OpenAI model' },
-  'gpt-4.1-mini': { name: 'GPT-4.1 Mini', provider: 'OpenAI', description: 'Fast and efficient' },
-  'gpt-4.1-nano': { name: 'GPT-4.1 Nano', provider: 'OpenAI', description: 'Ultra-fast, lightweight' },
-  'gpt-4o': { name: 'GPT-4o', provider: 'OpenAI', description: 'Great all-rounder' },
-  'o3-mini': { name: 'o3 Mini', provider: 'OpenAI', description: 'Advanced reasoning' },
+  'gpt-5.4': { name: 'GPT-5.4', provider: 'OpenAI', description: 'Most capable OpenAI model' },
+  'gpt-5.3-chat': { name: 'GPT-5.3 Chat', provider: 'OpenAI', description: 'Advanced conversational AI' },
+  'gpt-5-nano': { name: 'GPT-5 Nano', provider: 'OpenAI', description: 'Fast and lightweight (default)' },
+  'gpt-5-mini': { name: 'GPT-5 Mini', provider: 'OpenAI', description: 'Balanced speed and quality' },
+  'o3-pro': { name: 'o3 Pro', provider: 'OpenAI', description: 'Advanced reasoning' },
   // Anthropic Models
-  'claude-sonnet-4-20250514': { name: 'Claude Sonnet 4', provider: 'Anthropic', description: 'Latest balanced Claude' },
-  'claude-3-7-sonnet-latest': { name: 'Claude 3.7 Sonnet', provider: 'Anthropic', description: 'Extended thinking' },
-  'claude-3-5-haiku-latest': { name: 'Claude 3.5 Haiku', provider: 'Anthropic', description: 'Fast Claude' },
+  'claude-opus-4-6': { name: 'Claude Opus 4.6', provider: 'Anthropic', description: 'Most capable Claude' },
+  'claude-sonnet-4-6': { name: 'Claude Sonnet 4.6', provider: 'Anthropic', description: 'Fast and intelligent' },
+  'claude-opus-4-5': { name: 'Claude Opus 4.5', provider: 'Anthropic', description: 'Powerful reasoning' },
+  'claude-haiku-4-5': { name: 'Claude Haiku 4.5', provider: 'Anthropic', description: 'Ultra-fast Claude' },
   // Google Models
-  'gemini-2.0-flash': { name: 'Gemini 2.0 Flash', provider: 'Google', description: 'Google\'s fastest' },
-  'gemini-2.5-pro-preview-06-05': { name: 'Gemini 2.5 Pro', provider: 'Google', description: 'Google\'s most capable' },
+  'gemini-3.1-pro-preview': { name: 'Gemini 3.1 Pro', provider: 'Google', description: 'Google\'s most capable' },
+  'gemini-3.1-flash-lite-preview': { name: 'Gemini 3.1 Flash Lite', provider: 'Google', description: 'Google\'s fastest' },
+  'gemini-2.5-pro-preview': { name: 'Gemini 2.5 Pro', provider: 'Google', description: 'Strong all-rounder' },
   // xAI Models
-  'grok-3-mini-fast': { name: 'Grok 3 Mini Fast', provider: 'xAI', description: 'Quick responses' },
-  // Meta Models
-  'llama-4-maverick': { name: 'Llama 4 Maverick', provider: 'Meta', description: 'Meta\'s latest' },
-  // Mistral Models
-  'mistral-large-latest': { name: 'Mistral Large', provider: 'Mistral', description: 'Powerful Mistral' },
+  'grok-4.1-fast': { name: 'Grok 4.1 Fast', provider: 'xAI', description: 'Fast and witty' },
+  'grok-4-fast': { name: 'Grok 4 Fast', provider: 'xAI', description: 'Powerful Grok' },
   // DeepSeek Models
-  'deepseek-chat': { name: 'DeepSeek Chat', provider: 'DeepSeek', description: 'Strong reasoning' },
-  'deepseek-r1': { name: 'DeepSeek R1', provider: 'DeepSeek', description: 'Research model' },
+  'deepseek-v3.2': { name: 'DeepSeek v3.2', provider: 'DeepSeek', description: 'Latest DeepSeek' },
+  'deepseek-r1-0528': { name: 'DeepSeek R1', provider: 'DeepSeek', description: 'Research reasoning' },
+  // Mistral Models
+  'mistral-medium-2508': { name: 'Mistral Medium 3.1', provider: 'Mistral', description: 'Powerful Mistral' },
+  'mistral-small-2603': { name: 'Mistral Small 4', provider: 'Mistral', description: 'Fast Mistral' },
+  // Qwen Models
+  'qwen3.5-72b': { name: 'Qwen 3.5 72B', provider: 'Qwen', description: 'Strong open model' },
 };
 
 export class PuterAPI {
@@ -137,7 +143,7 @@ export class PuterAPI {
     }
 
     const defaultOptions = {
-      model: 'gpt-4.1-mini',
+      model: 'gpt-5-nano',
       stream: false,
       ...options
     };
@@ -202,98 +208,3 @@ export class PuterAPI {
 }
 
 export const puterAPI = PuterAPI.getInstance();
-
-// Helper function to generate prompts using Puter's free API
-export async function generateWithPuter(
-  userInput: string,
-  style: string,
-  format: string,
-  temperature: number,
-  maxTokens: number,
-  modelId: string = 'gpt-4.1-mini'
-): Promise<string> {
-  const systemPrompt = createPuterSystemPrompt(userInput, style, format, temperature, maxTokens, modelId);
-  
-  return puterAPI.generatePrompt(systemPrompt, userInput, {
-    model: modelId,
-    temperature,
-    maxTokens
-  });
-}
-
-function createPuterSystemPrompt(
-  userInput: string,
-  style: string,
-  format: string,
-  temperature: number,
-  maxTokens: number,
-  modelId: string
-): string {
-  const modelInfo = PUTER_MODELS[modelId as keyof typeof PUTER_MODELS];
-  const isGrok = modelId.includes('grok');
-  const isClaude = modelId.includes('claude');
-  const isGPT = modelId.includes('gpt');
-
-  let modelSpecific = '';
-  
-  if (isGrok) {
-    modelSpecific = `
-**Grok-Specific Optimization:**
-- Use your unique wit and engaging personality
-- Balance humor with technical accuracy
-- Provide unexpected insights and perspectives
-- Be direct and intellectually honest`;
-  } else if (isClaude) {
-    modelSpecific = `
-**Claude-Specific Optimization:**
-- Use structured thinking with XML tags where helpful
-- Emphasize systematic analysis and clear reasoning
-- Be thorough and considerate of nuance
-- Maintain high ethical standards`;
-  } else if (isGPT) {
-    modelSpecific = `
-**GPT-Specific Optimization:**
-- Leverage comprehensive knowledge base
-- Use step-by-step reasoning for complex tasks
-- Provide detailed explanations with examples
-- Maintain professional tone`;
-  }
-
-  return `You are an expert AI prompt engineer. Generate a professional, structured prompt based on the user's requirements.
-
-**CRITICAL RULES:**
-- NEVER include meta-commentary like "Here's a prompt for...", "This prompt will...", or "I've created..."
-- Start DIRECTLY with the role definition or task assignment
-- Output ONLY the prompt itself, ready to be copied and used immediately
-- Use clear section headers with ** markdown formatting
-- Write as if you ARE the AI being instructed, not talking about the prompt
-
-**USER REQUIREMENTS:**
-Target Model: ${modelInfo?.name || modelId} (${modelInfo?.provider || 'AI'})
-Style: ${style}
-Format: ${format}
-Temperature: ${temperature} (0=precise, 1=creative)
-Max Tokens: ${maxTokens}
-Task Description: "${userInput || 'General assistance'}"
-
-${modelSpecific}
-
-**PROMPT STRUCTURE TO FOLLOW:**
-1. Begin with direct role assignment ("You are a/an..." or direct task statement)
-2. Include these sections as appropriate:
-   - **Instructions:** Clear, numbered steps or bullet points
-   - **Constraints:** Specific dos and don'ts
-   - **Expected Output Format:** Exact structure required
-   - **Examples:** Input/output pairs when helpful
-   - **Tone and Style:** Voice and approach guidelines
-
-**QUALITY CRITERIA:**
-- Professional and immediately usable
-- No preambles, explanations, or meta-commentary
-- Structured with bold section headers
-- Specific and actionable instructions
-- Optimized for ${modelInfo?.name || modelId}'s specific capabilities
-- Match the ${style} style and ${format} format exactly
-
-Generate the prompt now - remember, output ONLY the prompt itself, starting directly with the role or task:`;
-}

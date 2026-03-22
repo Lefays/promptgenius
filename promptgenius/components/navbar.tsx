@@ -28,12 +28,20 @@ export default function Navbar() {
 
   return (
     <>
-      <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white ${
-          isScrolled ? "border-b border-gray-200 py-4" : "py-6"
-        }`}
+      <motion.nav
+        className="fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-500 bg-white/95 backdrop-blur-lg"
+        style={{
+          width: isScrolled ? "min(900px, 90%)" : "100%",
+          top: isScrolled ? "16px" : "0px",
+          borderRadius: isScrolled ? "16px" : "0px",
+          paddingTop: isScrolled ? "0.75rem" : "1.25rem",
+          paddingBottom: isScrolled ? "0.75rem" : "1.25rem",
+          paddingLeft: "2rem",
+          paddingRight: "2rem",
+          boxShadow: isScrolled ? "0 10px 40px rgba(0, 0, 0, 0.08)" : "0 2px 10px rgba(0, 0, 0, 0.05)"
+        }}
       >
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+        <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="relative z-10">
             <motion.div
@@ -96,7 +104,7 @@ export default function Navbar() {
             </AnimatePresence>
           </button>
         </div>
-      </nav>
+      </motion.nav>
 
       {/* Mobile Menu */}
       <AnimatePresence>

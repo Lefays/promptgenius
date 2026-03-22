@@ -2,30 +2,48 @@
 
 export const puterModels = [
   // OpenAI
-  { id: "gpt-4.1", name: "GPT-4.1", description: "Most capable OpenAI model" },
-  { id: "gpt-4.1-mini", name: "GPT-4.1 Mini", description: "Fast and efficient" },
-  { id: "gpt-4.1-nano", name: "GPT-4.1 Nano", description: "Ultra-fast, lightweight" },
-  { id: "gpt-4o", name: "GPT-4o", description: "Great all-rounder" },
-  { id: "o3-mini", name: "o3 Mini", description: "Advanced reasoning" },
+  { id: "gpt-5.4", name: "GPT-5.4", description: "Most capable OpenAI model" },
+  { id: "gpt-5.3-chat", name: "GPT-5.3 Chat", description: "Advanced conversational AI" },
+  { id: "gpt-5-nano", name: "GPT-5 Nano", description: "Fast and lightweight (default)" },
+  { id: "gpt-5-mini", name: "GPT-5 Mini", description: "Balanced speed and quality" },
+  { id: "o3-pro", name: "o3 Pro", description: "Advanced reasoning" },
   // Anthropic
-  { id: "claude-sonnet-4-20250514", name: "Claude Sonnet 4", description: "Latest balanced Claude" },
-  { id: "claude-3-7-sonnet-latest", name: "Claude 3.7 Sonnet", description: "Extended thinking" },
-  { id: "claude-3-5-haiku-latest", name: "Claude 3.5 Haiku", description: "Fast Claude" },
+  { id: "claude-opus-4-6", name: "Claude Opus 4.6", description: "Most capable Claude" },
+  { id: "claude-sonnet-4-6", name: "Claude Sonnet 4.6", description: "Fast and intelligent" },
+  { id: "claude-opus-4-5", name: "Claude Opus 4.5", description: "Powerful reasoning" },
+  { id: "claude-haiku-4-5", name: "Claude Haiku 4.5", description: "Ultra-fast Claude" },
   // Google
-  { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash", description: "Google's fastest" },
-  { id: "gemini-2.5-pro-preview-06-05", name: "Gemini 2.5 Pro", description: "Google's most capable" },
+  { id: "gemini-3.1-pro-preview", name: "Gemini 3.1 Pro", description: "Google's most capable" },
+  { id: "gemini-3.1-flash-lite-preview", name: "Gemini 3.1 Flash Lite", description: "Google's fastest" },
+  { id: "gemini-2.5-pro-preview", name: "Gemini 2.5 Pro", description: "Strong all-rounder" },
   // xAI
-  { id: "grok-3-mini-fast", name: "Grok 3 Mini Fast", description: "Quick responses" },
-  // Meta
-  { id: "llama-4-maverick", name: "Llama 4 Maverick", description: "Meta's latest" },
-  // Mistral
-  { id: "mistral-large-latest", name: "Mistral Large", description: "Powerful Mistral" },
+  { id: "grok-4.1-fast", name: "Grok 4.1 Fast", description: "Fast and witty" },
+  { id: "grok-4-fast", name: "Grok 4 Fast", description: "Powerful Grok" },
   // DeepSeek
-  { id: "deepseek-chat", name: "DeepSeek Chat", description: "Strong reasoning" },
-  { id: "deepseek-r1", name: "DeepSeek R1", description: "Research model" },
+  { id: "deepseek-v3.2", name: "DeepSeek v3.2", description: "Latest DeepSeek" },
+  { id: "deepseek-r1-0528", name: "DeepSeek R1", description: "Research reasoning" },
+  // Mistral
+  { id: "mistral-medium-2508", name: "Mistral Medium 3.1", description: "Powerful Mistral" },
+  { id: "mistral-small-2603", name: "Mistral Small 4", description: "Fast Mistral" },
+  // Qwen
+  { id: "qwen3.5-72b", name: "Qwen 3.5 72B", description: "Strong open model" },
 ]
 
 export const availableModels = puterModels
+
+// Models that don't support custom temperature (reasoning models, fixed-temp models)
+export const noTemperatureModels = [
+  'o3-pro',
+  'gpt-5-mini',
+  'gpt-5-nano',
+  'gpt-5.3-chat',
+  'gpt-5.4',
+  'deepseek-r1-0528',
+]
+
+export function supportsTemperature(modelId: string): boolean {
+  return !noTemperatureModels.includes(modelId)
+}
 
 export function getModelMapping(modelId: string): string {
   // Puter uses the model ID directly without prefixes

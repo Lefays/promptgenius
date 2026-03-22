@@ -1,25 +1,20 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { usePuter } from "@/lib/hooks/use-puter"
-import { 
-  Sparkles, 
-  Upload, 
-  Copy, 
+import { supportsTemperature } from "@/lib/api/providers"
+import {
+  Sparkles,
+  Upload,
+  Copy,
   Download,
   RefreshCw,
-  Image as ImageIcon,
   X,
-  Settings,
   History,
-  Save,
   ChevronDown,
-  FileText,
   Trash2,
   Bot
 } from "lucide-react"
@@ -43,7 +38,7 @@ interface GeneratedPrompt {
 export default function GeneratorPage() {
   const router = useRouter()
   const [userInput, setUserInput] = useState("")
-  const [selectedModel, setSelectedModel] = useState("gpt-4.1-mini")
+  const [selectedModel, setSelectedModel] = useState("gpt-5-nano")
   const { puterReady, generateWithPuter, signInToPuter, getPuterUser } = usePuter()
   const [puterUser, setPuterUser] = useState<any>(null)
   const [uploadedImage, setUploadedImage] = useState<File | null>(null)
@@ -109,27 +104,31 @@ export default function GeneratorPage() {
 
   const models = [
     // OpenAI
-    { id: "gpt-4.1", name: "GPT-4.1", description: "Most capable OpenAI model" },
-    { id: "gpt-4.1-mini", name: "GPT-4.1 Mini", description: "Fast and efficient" },
-    { id: "gpt-4.1-nano", name: "GPT-4.1 Nano", description: "Ultra-fast, lightweight" },
-    { id: "gpt-4o", name: "GPT-4o", description: "Great all-rounder" },
-    { id: "o3-mini", name: "o3 Mini", description: "Advanced reasoning" },
+    { id: "gpt-5.4", name: "GPT-5.4", description: "Most capable OpenAI model" },
+    { id: "gpt-5.3-chat", name: "GPT-5.3 Chat", description: "Advanced conversational AI" },
+    { id: "gpt-5-nano", name: "GPT-5 Nano", description: "Fast and lightweight (default)" },
+    { id: "gpt-5-mini", name: "GPT-5 Mini", description: "Balanced speed and quality" },
+    { id: "o3-pro", name: "o3 Pro", description: "Advanced reasoning" },
     // Anthropic
-    { id: "claude-sonnet-4-20250514", name: "Claude Sonnet 4", description: "Latest balanced Claude" },
-    { id: "claude-3-7-sonnet-latest", name: "Claude 3.7 Sonnet", description: "Extended thinking" },
-    { id: "claude-3-5-haiku-latest", name: "Claude 3.5 Haiku", description: "Fast Claude" },
+    { id: "claude-opus-4-6", name: "Claude Opus 4.6", description: "Most capable Claude" },
+    { id: "claude-sonnet-4-6", name: "Claude Sonnet 4.6", description: "Fast and intelligent" },
+    { id: "claude-opus-4-5", name: "Claude Opus 4.5", description: "Powerful reasoning" },
+    { id: "claude-haiku-4-5", name: "Claude Haiku 4.5", description: "Ultra-fast Claude" },
     // Google
-    { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash", description: "Google's fastest" },
-    { id: "gemini-2.5-pro-preview-06-05", name: "Gemini 2.5 Pro", description: "Google's most capable" },
+    { id: "gemini-3.1-pro-preview", name: "Gemini 3.1 Pro", description: "Google's most capable" },
+    { id: "gemini-3.1-flash-lite-preview", name: "Gemini 3.1 Flash Lite", description: "Google's fastest" },
+    { id: "gemini-2.5-pro-preview", name: "Gemini 2.5 Pro", description: "Strong all-rounder" },
     // xAI
-    { id: "grok-3-mini-fast", name: "Grok 3 Mini Fast", description: "Quick responses" },
-    // Meta
-    { id: "llama-4-maverick", name: "Llama 4 Maverick", description: "Meta's latest" },
-    // Mistral
-    { id: "mistral-large-latest", name: "Mistral Large", description: "Powerful Mistral" },
+    { id: "grok-4.1-fast", name: "Grok 4.1 Fast", description: "Fast and witty" },
+    { id: "grok-4-fast", name: "Grok 4 Fast", description: "Powerful Grok" },
     // DeepSeek
-    { id: "deepseek-chat", name: "DeepSeek Chat", description: "Strong reasoning" },
-    { id: "deepseek-r1", name: "DeepSeek R1", description: "Research model" },
+    { id: "deepseek-v3.2", name: "DeepSeek v3.2", description: "Latest DeepSeek" },
+    { id: "deepseek-r1-0528", name: "DeepSeek R1", description: "Research reasoning" },
+    // Mistral
+    { id: "mistral-medium-2508", name: "Mistral Medium 3.1", description: "Powerful Mistral" },
+    { id: "mistral-small-2603", name: "Mistral Small 4", description: "Fast Mistral" },
+    // Qwen
+    { id: "qwen3.5-72b", name: "Qwen 3.5 72B", description: "Strong open model" },
   ]
 
   const promptStyles = [
@@ -176,7 +175,10 @@ export default function GeneratorPage() {
       const prompt = await generateWithPuter(
         userInput,
         selectedModel,
-        advancedOptions
+        {
+          ...advancedOptions,
+          imageContext: uploadedImage ? uploadedImage.name : undefined
+        }
       )
       
       // Ensure prompt is always a string
@@ -229,10 +231,10 @@ export default function GeneratorPage() {
 This model has reached its usage limit. You can:
 
 1. Try a different model:
-   • GPT-4.1 Mini (highest limits)
-   • Claude 3.5 Haiku
-   • Gemini 2.0 Flash
-   • Grok 3 Mini Fast
+   • GPT-5 Nano (highest limits)
+   • Claude Haiku 4.5
+   • Gemini 3.1 Flash Lite
+   • Grok 4.1 Fast
 
 2. Wait ~15-60 minutes for the limit to reset
 
@@ -273,13 +275,10 @@ This model has reached its usage limit. You can:
       ? generatedPrompt 
       : JSON.stringify(generatedPrompt, null, 2)
     
-    // Encode the prompt and model to pass as URL parameters
-    const params = new URLSearchParams({
-      prompt: promptText,
-      model: selectedModel
-    })
-    
-    router.push(`/testing?${params.toString()}`)
+    // Pass prompt via sessionStorage to avoid giant URL
+    sessionStorage.setItem('test_prompt', promptText)
+    sessionStorage.setItem('test_model', selectedModel)
+    router.push('/testing')
   }
 
   const loadFromHistory = (prompt: GeneratedPrompt) => {
@@ -408,23 +407,31 @@ This model has reached its usage limit. You can:
                         </select>
                       </div>
                     </div>
-                    <div>
-                      <Label htmlFor="temperature">Temperature: {advancedOptions.temperature}</Label>
-                      <input
-                        id="temperature"
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.1"
-                        value={advancedOptions.temperature}
-                        onChange={(e) => setAdvancedOptions({...advancedOptions, temperature: parseFloat(e.target.value)})}
-                        className="mt-1 w-full"
-                      />
-                      <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                        <span>Precise</span>
-                        <span>Creative</span>
+                    {supportsTemperature(selectedModel) ? (
+                      <div>
+                        <Label htmlFor="temperature">Temperature: {advancedOptions.temperature}</Label>
+                        <input
+                          id="temperature"
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.1"
+                          value={advancedOptions.temperature}
+                          onChange={(e) => setAdvancedOptions({...advancedOptions, temperature: parseFloat(e.target.value)})}
+                          className="mt-1 w-full"
+                        />
+                        <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                          <span>Precise</span>
+                          <span>Creative</span>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="rounded-md bg-secondary/30 p-3">
+                        <p className="text-sm text-muted-foreground">
+                          Temperature is not configurable for {models.find(m => m.id === selectedModel)?.name || selectedModel} — this model uses a fixed temperature.
+                        </p>
+                      </div>
+                    )}
                     <div>
                       <Label htmlFor="max-tokens">Max Tokens: {advancedOptions.maxTokens}</Label>
                       <input
@@ -508,32 +515,50 @@ This model has reached its usage limit. You can:
               {/* Model Selection */}
               <div className="rounded-lg border bg-card p-6">
                 <Label className="text-lg font-semibold mb-4 block">Select AI Model</Label>
-                <div className="space-y-2">
-                  {models.map(model => {
-                    const isAvailable = true
-                    return (
-                      <button
-                        key={model.id}
-                        onClick={() => isAvailable && setSelectedModel(model.id)}
-                        disabled={!isAvailable}
-                        className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                          selectedModel === model.id 
-                            ? "border-primary bg-primary/10" 
-                            : !isAvailable
-                            ? "border-input bg-secondary/20 opacity-50 cursor-not-allowed"
-                            : "border-input hover:bg-secondary/50"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="font-medium">{model.name}</div>
-                            <div className="text-xs text-muted-foreground">{model.description}</div>
+                <div className="space-y-5 max-h-[600px] overflow-y-auto pr-1">
+                  {(() => {
+                    const groups = [
+                      { label: "OpenAI", ids: ["gpt-5.4", "gpt-5.3-chat", "gpt-5-nano", "gpt-5-mini", "o3-pro"] },
+                      { label: "Anthropic", ids: ["claude-opus-4-6", "claude-sonnet-4-6", "claude-opus-4-5", "claude-haiku-4-5"] },
+                      { label: "Google", ids: ["gemini-3.1-pro-preview", "gemini-3.1-flash-lite-preview", "gemini-2.5-pro-preview"] },
+                      { label: "xAI", ids: ["grok-4.1-fast", "grok-4-fast"] },
+                      { label: "DeepSeek", ids: ["deepseek-v3.2", "deepseek-r1-0528"] },
+                      { label: "Mistral", ids: ["mistral-medium-2508", "mistral-small-2603"] },
+                      { label: "Qwen", ids: ["qwen3.5-72b"] },
+                    ]
+                    return groups.map(group => {
+                      const groupModels = group.ids.map(id => models.find(m => m.id === id)).filter(Boolean) as typeof models
+                      if (groupModels.length === 0) return null
+                      return (
+                        <div key={group.label}>
+                          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">{group.label}</div>
+                          <div className="space-y-1.5">
+                            {groupModels.map(model => (
+                              <button
+                                key={model.id}
+                                onClick={() => setSelectedModel(model.id)}
+                                className={`w-full text-left px-3 py-2.5 rounded-lg border transition-all ${
+                                  selectedModel === model.id
+                                    ? "border-primary bg-primary/10 shadow-sm"
+                                    : "border-transparent hover:bg-secondary/50 hover:border-input"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="min-w-0">
+                                    <div className="font-medium text-sm truncate">{model.name}</div>
+                                    <div className="text-xs text-muted-foreground truncate">{model.description}</div>
+                                  </div>
+                                  {selectedModel === model.id && (
+                                    <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 ml-2" />
+                                  )}
+                                </div>
+                              </button>
+                            ))}
                           </div>
-
                         </div>
-                      </button>
-                    )
-                  })}
+                      )
+                    })
+                  })()}
                 </div>
               </div>
 

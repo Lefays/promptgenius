@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useRouter } from "next/navigation"
 import {
   History,
   Copy,
@@ -12,7 +13,7 @@ import {
   Download,
   ChevronLeft,
   ChevronRight,
-  FileText,
+  Bot,
   Clock,
   Loader2
 } from "lucide-react"
@@ -34,6 +35,7 @@ interface GeneratedPrompt {
 }
 
 export default function HistoryPage() {
+  const router = useRouter()
   const [history, setHistory] = useState<GeneratedPrompt[]>([])
   const [filteredHistory, setFilteredHistory] = useState<GeneratedPrompt[]>([])
   const [searchTerm, setSearchTerm] = useState("")
@@ -314,18 +316,25 @@ export default function HistoryPage() {
                           variant="outline"
                           size="icon"
                           onClick={() => copyToClipboard(selectedPrompt.prompt)}
+                          title="Copy to clipboard"
                         >
                           <Copy className="h-4 w-4" />
                         </Button>
-                        <Link href={`/generator?prompt=${encodeURIComponent(
-                          typeof selectedPrompt.prompt === 'string' 
-                            ? selectedPrompt.prompt 
-                            : JSON.stringify(selectedPrompt.prompt)
-                        )}&model=${selectedPrompt.model}`}>
-                          <Button variant="outline" size="icon">
-                            <FileText className="h-4 w-4" />
-                          </Button>
-                        </Link>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          title="Test this prompt"
+                          onClick={() => {
+                            const promptText = typeof selectedPrompt.prompt === 'string'
+                              ? selectedPrompt.prompt
+                              : JSON.stringify(selectedPrompt.prompt, null, 2)
+                            sessionStorage.setItem('test_prompt', promptText)
+                            sessionStorage.setItem('test_model', selectedPrompt.model)
+                            router.push('/testing')
+                          }}
+                        >
+                          <Bot className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
 
