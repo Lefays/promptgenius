@@ -38,26 +38,28 @@ export interface PuterStreamPart {
 }
 
 export const PUTER_MODELS = {
-  // Grok Models
-  'grok-2-1212': { name: 'Grok 2', provider: 'xAI', description: 'Advanced reasoning model' },
-  'grok-2-vision-1212': { name: 'Grok 2 Vision', provider: 'xAI', description: 'Multimodal with vision' },
-  'grok-3': { name: 'Grok 3', provider: 'xAI', description: 'Latest stable Grok' },
-  'grok-3-beta': { name: 'Grok 3 Beta', provider: 'xAI', description: 'Cutting edge features' },
-  'grok-3-mini': { name: 'Grok 3 Mini', provider: 'xAI', description: 'Fast and efficient' },
-  'grok-3-mini-beta': { name: 'Grok 3 Mini Beta', provider: 'xAI', description: 'Fast with new features' },
-  'grok-4': { name: 'Grok 4', provider: 'xAI', description: 'Most advanced Grok' },
-  'grok-vision-beta': { name: 'Grok Vision Beta', provider: 'xAI', description: 'Vision capabilities' },
-  
-  // Other AI Models available through Puter (based on their docs)
-  'gpt-4': { name: 'GPT-4', provider: 'OpenAI', description: 'OpenAI\'s most capable' },
-  'gpt-4-turbo': { name: 'GPT-4 Turbo', provider: 'OpenAI', description: 'Fast GPT-4' },
-  'gpt-3.5-turbo': { name: 'GPT-3.5 Turbo', provider: 'OpenAI', description: 'Fast and efficient' },
-  'claude-3-opus': { name: 'Claude 3 Opus', provider: 'Anthropic', description: 'Most powerful Claude' },
-  'claude-3-sonnet': { name: 'Claude 3 Sonnet', provider: 'Anthropic', description: 'Balanced Claude' },
-  'claude-3-haiku': { name: 'Claude 3 Haiku', provider: 'Anthropic', description: 'Fast Claude' },
-  'llama-3.1-405b': { name: 'Llama 3.1 405B', provider: 'Meta', description: 'Largest open model' },
-  'llama-3.1-70b': { name: 'Llama 3.1 70B', provider: 'Meta', description: 'Powerful open model' },
-  'mixtral-8x7b': { name: 'Mixtral 8x7B', provider: 'Mistral', description: 'MoE architecture' }
+  // OpenAI Models
+  'gpt-4.1': { name: 'GPT-4.1', provider: 'OpenAI', description: 'Most capable OpenAI model' },
+  'gpt-4.1-mini': { name: 'GPT-4.1 Mini', provider: 'OpenAI', description: 'Fast and efficient' },
+  'gpt-4.1-nano': { name: 'GPT-4.1 Nano', provider: 'OpenAI', description: 'Ultra-fast, lightweight' },
+  'gpt-4o': { name: 'GPT-4o', provider: 'OpenAI', description: 'Great all-rounder' },
+  'o3-mini': { name: 'o3 Mini', provider: 'OpenAI', description: 'Advanced reasoning' },
+  // Anthropic Models
+  'claude-sonnet-4-20250514': { name: 'Claude Sonnet 4', provider: 'Anthropic', description: 'Latest balanced Claude' },
+  'claude-3-7-sonnet-latest': { name: 'Claude 3.7 Sonnet', provider: 'Anthropic', description: 'Extended thinking' },
+  'claude-3-5-haiku-latest': { name: 'Claude 3.5 Haiku', provider: 'Anthropic', description: 'Fast Claude' },
+  // Google Models
+  'gemini-2.0-flash': { name: 'Gemini 2.0 Flash', provider: 'Google', description: 'Google\'s fastest' },
+  'gemini-2.5-pro-preview-06-05': { name: 'Gemini 2.5 Pro', provider: 'Google', description: 'Google\'s most capable' },
+  // xAI Models
+  'grok-3-mini-fast': { name: 'Grok 3 Mini Fast', provider: 'xAI', description: 'Quick responses' },
+  // Meta Models
+  'llama-4-maverick': { name: 'Llama 4 Maverick', provider: 'Meta', description: 'Meta\'s latest' },
+  // Mistral Models
+  'mistral-large-latest': { name: 'Mistral Large', provider: 'Mistral', description: 'Powerful Mistral' },
+  // DeepSeek Models
+  'deepseek-chat': { name: 'DeepSeek Chat', provider: 'DeepSeek', description: 'Strong reasoning' },
+  'deepseek-r1': { name: 'DeepSeek R1', provider: 'DeepSeek', description: 'Research model' },
 };
 
 export class PuterAPI {
@@ -135,26 +137,13 @@ export class PuterAPI {
     }
 
     const defaultOptions = {
-      model: 'x-ai/grok-4',
+      model: 'gpt-4.1-mini',
       stream: false,
       ...options
     };
 
-    // Convert model names to Puter format
-    const modelMap: Record<string, string> = {
-      'grok-4': 'x-ai/grok-4',
-      'grok-3': 'x-ai/grok-3',
-      'grok-3-mini': 'x-ai/grok-3-mini',
-      'grok-2-1212': 'x-ai/grok-2-1212',
-      'gpt-4': 'openai/gpt-4',
-      'gpt-3.5-turbo': 'openai/gpt-3.5-turbo',
-      'claude-3-opus': 'anthropic/claude-3-opus',
-      'claude-3-sonnet': 'anthropic/claude-3-sonnet',
-      'llama-3.1-405b': 'meta/llama-3.1-405b',
-      'mixtral-8x7b': 'mistral/mixtral-8x7b'
-    };
-
-    const puterModel = modelMap[defaultOptions.model] || defaultOptions.model;
+    // Puter.js accepts model IDs directly
+    const puterModel = defaultOptions.model;
 
     try {
       const response = await window.puter.ai.chat(prompt, {
@@ -194,7 +183,7 @@ export class PuterAPI {
     }
 
     const response = await this.chat(messages, {
-      model: options?.model || 'grok-4',
+      model: options?.model || 'gpt-4.1-mini',
       temperature: options?.temperature,
       max_tokens: options?.maxTokens,
       stream: false
@@ -221,7 +210,7 @@ export async function generateWithPuter(
   format: string,
   temperature: number,
   maxTokens: number,
-  modelId: string = 'grok-4'
+  modelId: string = 'gpt-4.1-mini'
 ): Promise<string> {
   const systemPrompt = createPuterSystemPrompt(userInput, style, format, temperature, maxTokens, modelId);
   

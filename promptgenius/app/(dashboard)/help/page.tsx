@@ -3,7 +3,6 @@
 import {
   HelpCircle,
   Sparkles,
-  Settings,
   History,
   Shield,
   Zap,
@@ -14,7 +13,8 @@ import {
   XCircle,
   ExternalLink,
   Users,
-  Cpu
+  Cpu,
+  Settings
 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -23,15 +23,19 @@ export default function HelpPage() {
   const faqs = [
     {
       question: "How does PromptGenius work?",
-      answer: "PromptGenius uses Puter's free AI infrastructure to generate optimized prompts. No API keys are required - just sign up with your email and start generating prompts instantly."
+      answer: "PromptGenius uses Puter's free AI infrastructure to generate optimized prompts. No API keys or accounts are required - just open the app and start generating prompts instantly."
     },
     {
       question: "What AI models are available?",
-      answer: "We support GPT-4o, GPT-4o Mini, GPT-5, Claude (Opus 4, Sonnet 4, 3.5 Sonnet), Gemini 1.5 Flash, Grok 3, and Mistral models. All models are available for free."
+      answer: "We support GPT-4.1, GPT-4.1 Mini, GPT-4o, Claude Sonnet 4, Claude 3.7 Sonnet, Claude 3.5 Haiku, Gemini 2.0 Flash, Gemini 2.5 Pro, Grok 3, Llama 4, Mistral Large, DeepSeek Chat, and DeepSeek R1. All models are available for free."
     },
     {
       question: "Is PromptGenius really free?",
-      answer: "Yes! PromptGenius is completely free. You get unlimited prompts, access to all AI models, prompt history, cloud sync, and the testing lab - all at no cost."
+      answer: "Yes! PromptGenius is completely free with no account required. You get unlimited prompts, access to all AI models, prompt history, and the testing lab - all at no cost."
+    },
+    {
+      question: "Do I need to create an account?",
+      answer: "No. PromptGenius works without any account or sign-up. Just open the app and start generating prompts right away."
     },
     {
       question: "How do I test my generated prompts?",
@@ -39,7 +43,7 @@ export default function HelpPage() {
     },
     {
       question: "Is my data secure?",
-      answer: "Yes! Your prompts and user data are stored securely in Supabase with encryption. We don't share your data with third parties, and you can delete your account and data at any time."
+      answer: "Yes! Your prompts are stored locally in the browser. Nothing is sent to external servers beyond the AI model calls needed to generate your prompts. You have full control over your data."
     },
     {
       question: "Why am I getting 'Permission denied' errors?",
@@ -52,6 +56,10 @@ export default function HelpPage() {
     {
       question: "What's the difference between prompt styles?",
       answer: "Professional: Formal and structured. Creative: Imaginative and engaging. Technical: Precise with implementation details. Casual: Friendly and conversational. Academic: Research-focused with citations."
+    },
+    {
+      question: "What is the Anti-Prompt feature?",
+      answer: "The Anti-Prompt field in Advanced Options lets you specify things the generated prompt should NOT include or do. For example, you can tell it to avoid jargon, skip bullet points, or not mention competitors."
     }
   ]
 
@@ -64,7 +72,7 @@ export default function HelpPage() {
     {
       icon: Shield,
       title: "Secure & Private",
-      description: "Your data encrypted with Supabase"
+      description: "Your data stays in your browser"
     },
     {
       icon: History,
@@ -79,19 +87,19 @@ export default function HelpPage() {
     {
       icon: Settings,
       title: "Advanced Options",
-      description: "Fine-tune temperature and length"
+      description: "Fine-tune temperature, length, and anti-prompts"
     },
     {
       icon: Users,
       title: "Multiple Models",
-      description: "Choose from 10+ AI models"
+      description: "Choose from 15+ AI models"
     }
   ]
 
   const troubleshooting = [
     {
       issue: "Can't generate prompts",
-      solution: "Make sure you're signed in. If you're seeing errors, try a different model or wait a few minutes.",
+      solution: "Try refreshing the page or using a different model. If the issue persists, wait a few minutes and try again.",
       icon: XCircle
     },
     {
@@ -101,7 +109,7 @@ export default function HelpPage() {
     },
     {
       issue: "Generated prompt is cut off",
-      solution: "Increase the Max Tokens in Advanced Options. Some models have token limits - try GPT-4o or Claude for longer outputs.",
+      solution: "Increase the Max Tokens in Advanced Options. Some models have token limits - try GPT-4.1 or Claude Sonnet 4 for longer outputs.",
       icon: AlertCircle
     },
     {
@@ -113,7 +121,7 @@ export default function HelpPage() {
 
   const modelGuide = [
     {
-      model: "GPT-4o Mini",
+      model: "GPT-4.1 Mini",
       bestFor: "Quick, efficient prompts for everyday tasks",
       tier: "Free"
     },
@@ -123,22 +131,22 @@ export default function HelpPage() {
       tier: "Free"
     },
     {
-      model: "Claude 3.5 Sonnet",
+      model: "Claude Sonnet 4",
       bestFor: "Creative writing and nuanced responses",
       tier: "Free"
     },
     {
-      model: "Claude Opus 4",
-      bestFor: "Advanced analysis and long-form content",
+      model: "Claude 3.7 Sonnet",
+      bestFor: "Advanced analysis and extended thinking",
       tier: "Free"
     },
     {
-      model: "Gemini 1.5 Flash",
+      model: "Gemini 2.0 Flash",
       bestFor: "Fast responses with good accuracy",
       tier: "Free"
     },
     {
-      model: "Mistral Medium",
+      model: "Mistral Large",
       bestFor: "Technical and coding tasks",
       tier: "Free"
     }
@@ -164,36 +172,36 @@ export default function HelpPage() {
               <li className="flex gap-3">
                 <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center">1</span>
                 <div>
-                  <p className="font-medium">Sign up or log in</p>
-                  <p className="text-sm text-muted-foreground">Go to Settings and create an account with your email. It's free and takes seconds.</p>
+                  <p className="font-medium">Go to the Generator</p>
+                  <p className="text-sm text-muted-foreground">Open the Generator page from the sidebar. No account needed - just jump right in.</p>
                 </div>
               </li>
               <li className="flex gap-3">
                 <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center">2</span>
                 <div>
-                  <p className="font-medium">Describe your AI task</p>
-                  <p className="text-sm text-muted-foreground">In the Generator, explain what you want your AI agent to do. Be specific about the goal.</p>
+                  <p className="font-medium">Describe what you want your AI to do</p>
+                  <p className="text-sm text-muted-foreground">Explain the task in the text box. Be specific about the goal and any requirements.</p>
                 </div>
               </li>
               <li className="flex gap-3">
                 <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center">3</span>
                 <div>
-                  <p className="font-medium">Choose your AI model</p>
-                  <p className="text-sm text-muted-foreground">Select which AI model you'll use the prompt with (GPT-4, Claude, etc.)</p>
+                  <p className="font-medium">Pick a model</p>
+                  <p className="text-sm text-muted-foreground">Select which AI model you want to generate your prompt with (GPT-4.1, Claude, Gemini, etc.)</p>
                 </div>
               </li>
               <li className="flex gap-3">
                 <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center">4</span>
                 <div>
-                  <p className="font-medium">Generate your prompt</p>
-                  <p className="text-sm text-muted-foreground">Click Generate and get an optimized prompt tailored for your chosen model.</p>
+                  <p className="font-medium">Click Generate</p>
+                  <p className="text-sm text-muted-foreground">Hit the Generate button and get an optimized prompt tailored for your chosen model.</p>
                 </div>
               </li>
               <li className="flex gap-3">
                 <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center">5</span>
                 <div>
-                  <p className="font-medium">Test and refine</p>
-                  <p className="text-sm text-muted-foreground">Use the Testing Lab to chat with AI using your prompt and see the results in real-time.</p>
+                  <p className="font-medium">Test it in the Testing Lab</p>
+                  <p className="text-sm text-muted-foreground">Click the Test button to open the Testing Lab, where you can chat with AI using your prompt and see the results in real-time.</p>
                 </div>
               </li>
             </ol>
@@ -229,8 +237,8 @@ export default function HelpPage() {
                     <p className="text-sm text-muted-foreground">{item.bestFor}</p>
                   </div>
                   <span className={`text-xs px-2 py-1 rounded font-medium ${
-                    item.tier === 'Free' 
-                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+                    item.tier === 'Free'
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                       : 'bg-primary/10 text-primary'
                   }`}>
                     {item.tier}
@@ -282,8 +290,9 @@ export default function HelpPage() {
               Everything is Free
             </h2>
             <div className="p-4 rounded-lg border border-primary">
-              <h3 className="font-semibold mb-2">Free Plan</h3>
+              <h3 className="font-semibold mb-2">No Account Needed</h3>
               <p className="text-2xl font-bold mb-3">$0<span className="text-sm font-normal"> forever</span></p>
+              <p className="text-sm text-muted-foreground mb-3">Just open PromptGenius and start generating. No sign-up, no credit card, no strings attached.</p>
               <ul className="space-y-2 text-sm">
                 <li className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-green-500" />
@@ -295,7 +304,7 @@ export default function HelpPage() {
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-green-500" />
-                  Prompt history & cloud sync
+                  Prompt history stored locally
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-green-500" />
@@ -303,7 +312,11 @@ export default function HelpPage() {
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-green-500" />
-                  Advanced options
+                  Advanced options with anti-prompt
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  No account required
                 </li>
               </ul>
             </div>
@@ -316,7 +329,7 @@ export default function HelpPage() {
               We're here to help! Choose the best way to get support:
             </p>
             <div className="space-y-3">
-              <a 
+              <a
                 href="https://github.com/Lefays/prompt-generative/issues"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -329,8 +342,8 @@ export default function HelpPage() {
                 </div>
                 <ExternalLink className="h-4 w-4 text-muted-foreground" />
               </a>
-              
-              <a 
+
+              <a
                 href="https://github.com/Lefays/prompt-generative"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -356,8 +369,8 @@ export default function HelpPage() {
 
           {/* Footer */}
           <div className="text-center text-sm text-muted-foreground pb-8">
-            <p>PromptGenius v1.0.0 • Built with Next.js, Supabase, and Puter</p>
-            <p className="mt-1">Created with ❤️ by the PromptGenius team</p>
+            <p>PromptGenius v1.0.0 - Built with Next.js and Puter</p>
+            <p className="mt-1">Created by the PromptGenius team</p>
           </div>
         </div>
       </div>

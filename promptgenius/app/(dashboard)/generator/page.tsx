@@ -6,13 +6,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { supabase } from "@/lib/supabase/client"
 import { usePuter } from "@/lib/hooks/use-puter"
-import {
-  isModelAvailable,
-  type SubscriptionTier
-} from "@/lib/subscription"
-import { savePrompt } from "@/lib/supabase/prompts"
 import { 
   Sparkles, 
   Upload, 
@@ -49,7 +43,7 @@ interface GeneratedPrompt {
 export default function GeneratorPage() {
   const router = useRouter()
   const [userInput, setUserInput] = useState("")
-  const [selectedModel, setSelectedModel] = useState("gpt-4o-mini")
+  const [selectedModel, setSelectedModel] = useState("gpt-4.1-mini")
   const { puterReady, generateWithPuter, signInToPuter, getPuterUser } = usePuter()
   const [puterUser, setPuterUser] = useState<any>(null)
   const [uploadedImage, setUploadedImage] = useState<File | null>(null)
@@ -64,19 +58,13 @@ export default function GeneratorPage() {
     temperature: 0.7,
     maxTokens: 2000,
     style: "professional",
-    format: "detailed"
+    format: "detailed",
+    antiPrompt: ""
   })
   const [showAdvanced, setShowAdvanced] = useState(false)
   
-  // Authentication and subscription state
-  const [user, setUser] = useState<any>(null)
-  const [userTier, setUserTier] = useState<SubscriptionTier>('free')
-  // Rate limits removed - everything is free
-
   useEffect(() => {
-    // Check user authentication and load history
-    checkUser()
-    loadHistoryFromSupabase()
+    loadFromLocalStorage()
     checkPuterUser()
   }, [])
   
@@ -90,48 +78,6 @@ export default function GeneratorPage() {
   useEffect(() => {
     checkPuterUser()
   }, [puterReady])
-
-  const checkUser = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-      
-      if (user) {
-        // Get user's subscription tier from metadata
-        const tier = user.user_metadata?.subscription_tier || 'free'
-        setUserTier(tier as SubscriptionTier)
-      }
-    } catch (error) {
-      console.error('Error checking user:', error)
-    }
-  }
-
-  const loadHistoryFromSupabase = async () => {
-    setIsLoadingHistory(true)
-    try {
-      const response = await fetch('/api/prompts/list?limit=50')
-      const result = await response.json()
-      
-      if (result.success && result.data && result.data.length > 0) {
-        // Use Supabase data if available
-        setHistory(result.data)
-      } else {
-        // Use localStorage if Supabase is empty or unavailable
-        loadFromLocalStorage()
-      }
-      
-      // If we got a fallback flag, it means network is blocking Supabase
-      if (result.fallback) {
-        console.log('Using localStorage due to network restrictions')
-        loadFromLocalStorage()
-      }
-    } catch (error) {
-      console.error('Error loading history from Supabase:', error)
-      loadFromLocalStorage()
-    } finally {
-      setIsLoadingHistory(false)
-    }
-  }
 
   const loadFromLocalStorage = () => {
     const savedHistory = localStorage.getItem('prompt_history')
@@ -162,16 +108,28 @@ export default function GeneratorPage() {
   }
 
   const models = [
-    { id: "gpt-4o", name: "GPT-4o", description: "OpenAI's most capable" },
-    { id: "gpt-4o-mini", name: "GPT-4o Mini", description: "Fast and efficient" },
-    { id: "gpt-5-chat-latest", name: "GPT-5 Chat", description: "Latest GPT model" },
-    { id: "claude-opus-4-latest", name: "Claude Opus 4", description: "Most powerful Claude" },
-    { id: "claude-sonnet-4-latest", name: "Claude Sonnet 4", description: "Balanced Claude" },
-    { id: "claude-3-5-sonnet-latest", name: "Claude 3.5 Sonnet", description: "Latest Sonnet" },
-    { id: "grok-3", name: "Grok 3", description: "Fast responses" },
+    // OpenAI
+    { id: "gpt-4.1", name: "GPT-4.1", description: "Most capable OpenAI model" },
+    { id: "gpt-4.1-mini", name: "GPT-4.1 Mini", description: "Fast and efficient" },
+    { id: "gpt-4.1-nano", name: "GPT-4.1 Nano", description: "Ultra-fast, lightweight" },
+    { id: "gpt-4o", name: "GPT-4o", description: "Great all-rounder" },
+    { id: "o3-mini", name: "o3 Mini", description: "Advanced reasoning" },
+    // Anthropic
+    { id: "claude-sonnet-4-20250514", name: "Claude Sonnet 4", description: "Latest balanced Claude" },
+    { id: "claude-3-7-sonnet-latest", name: "Claude 3.7 Sonnet", description: "Extended thinking" },
+    { id: "claude-3-5-haiku-latest", name: "Claude 3.5 Haiku", description: "Fast Claude" },
+    // Google
+    { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash", description: "Google's fastest" },
+    { id: "gemini-2.5-pro-preview-06-05", name: "Gemini 2.5 Pro", description: "Google's most capable" },
+    // xAI
+    { id: "grok-3-mini-fast", name: "Grok 3 Mini Fast", description: "Quick responses" },
+    // Meta
+    { id: "llama-4-maverick", name: "Llama 4 Maverick", description: "Meta's latest" },
+    // Mistral
     { id: "mistral-large-latest", name: "Mistral Large", description: "Powerful Mistral" },
-    { id: "mistral-medium-latest", name: "Mistral Medium", description: "Balanced Mistral" },
-    { id: "gemini-1.5-flash", name: "Gemini 1.5 Flash", description: "Google's fast model" }
+    // DeepSeek
+    { id: "deepseek-chat", name: "DeepSeek Chat", description: "Strong reasoning" },
+    { id: "deepseek-r1", name: "DeepSeek R1", description: "Research model" },
   ]
 
   const promptStyles = [
@@ -256,19 +214,8 @@ export default function GeneratorPage() {
       localHistory = localHistory.slice(0, 50)
       localStorage.setItem('prompt_history', JSON.stringify(localHistory))
       
-      // Also save to Supabase if user is authenticated
-      if (user) {
-        await savePrompt({
-          prompt: promptText,  // Use prompt field to match DB
-          user_input: userInput,
-          model: selectedModel,
-          style: advancedOptions.style,
-          // Note: format, temperature, max_tokens columns don't exist in DB yet
-        })
-      }
-      
-      // Refresh history
-      await loadHistoryFromSupabase()
+      // Refresh history from localStorage
+      loadFromLocalStorage()
     } catch (error: any) {
       console.error('Error generating prompt:', error)
       
@@ -282,10 +229,10 @@ export default function GeneratorPage() {
 This model has reached its usage limit. You can:
 
 1. Try a different model:
-   • GPT-4o Mini (highest limits)
-   • Claude 3.5 Sonnet 
-   • Mistral Medium
-   • Gemini 1.5 Flash
+   • GPT-4.1 Mini (highest limits)
+   • Claude 3.5 Haiku
+   • Gemini 2.0 Flash
+   • Grok 3 Mini Fast
 
 2. Wait ~15-60 minutes for the limit to reset
 
@@ -346,9 +293,9 @@ This model has reached its usage limit. You can:
     setShowHistory(false)
   }
 
-  const deleteFromHistory = async (promptId: string, e: React.MouseEvent) => {
+  const deleteFromHistory = (promptId: string, e: React.MouseEvent) => {
     e.stopPropagation() // Prevent loading the prompt when clicking delete
-    
+
     // Delete from localStorage
     const savedHistory = localStorage.getItem('prompt_history')
     if (savedHistory) {
@@ -358,25 +305,9 @@ This model has reached its usage limit. You can:
         localStorage.setItem('prompt_history', JSON.stringify(localHistory))
       } catch {}
     }
-    
-    // Try to delete from Supabase
-    try {
-      const response = await fetch(`/api/prompts/delete?id=${promptId}`, {
-        method: 'DELETE'
-      })
-      
-      if (response.ok) {
-        // Refresh history
-        await loadHistoryFromSupabase()
-      } else {
-        // If Supabase fails, just reload from localStorage
-        loadFromLocalStorage()
-      }
-    } catch (error) {
-      console.error('Error deleting prompt:', error)
-      // Reload from localStorage if network fails
-      loadFromLocalStorage()
-    }
+
+    // Reload from localStorage
+    loadFromLocalStorage()
   }
 
   return (
@@ -507,6 +438,17 @@ This model has reached its usage limit. You can:
                         className="mt-1 w-full"
                       />
                     </div>
+                    <div className="sm:col-span-2">
+                      <Label htmlFor="anti-prompt">Anti-Prompt (what to avoid)</Label>
+                      <textarea
+                        id="anti-prompt"
+                        placeholder="E.g., Don't use jargon, avoid being too formal, no bullet points, don't mention competitors..."
+                        value={advancedOptions.antiPrompt}
+                        onChange={(e) => setAdvancedOptions({...advancedOptions, antiPrompt: e.target.value})}
+                        className="mt-1 w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-ring"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Specify things the generated prompt should NOT include or do</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -568,7 +510,7 @@ This model has reached its usage limit. You can:
                 <Label className="text-lg font-semibold mb-4 block">Select AI Model</Label>
                 <div className="space-y-2">
                   {models.map(model => {
-                    const isAvailable = !user || isModelAvailable(model.id, userTier)
+                    const isAvailable = true
                     return (
                       <button
                         key={model.id}

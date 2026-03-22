@@ -6,14 +6,9 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { supabase } from "@/lib/supabase/client"
 import { usePuter } from "@/lib/hooks/use-puter"
 import {
-  isModelAvailable,
-  type SubscriptionTier
-} from "@/lib/subscription"
-import { 
-  Send, 
+  Send,
   Bot,
   User,
   Settings,
@@ -21,7 +16,6 @@ import {
   RotateCcw,
   Sparkles,
   ChevronDown,
-  AlertCircle,
   Loader2,
   Edit,
   Check,
@@ -52,7 +46,7 @@ function TestingPageContent() {
   
   // Get prompt and model from URL params
   const initialPrompt = searchParams.get('prompt') || ''
-  const initialModel = searchParams.get('model') || 'gpt-4o-mini'
+  const initialModel = searchParams.get('model') || 'gpt-4.1-mini'
   
   // State
   const [systemPrompt, setSystemPrompt] = useState(initialPrompt)
@@ -67,54 +61,42 @@ function TestingPageContent() {
   const [filePreview, setFilePreview] = useState<{ name: string; url: string; type: string; path?: string; loading?: boolean }[]>([])
   const [uploadingFiles, setUploadingFiles] = useState(false)
   
-  // Authentication and subscription
-  const [user, setUser] = useState<any>(null)
-  const [userTier, setUserTier] = useState<SubscriptionTier>('free')
-
-  
   // Advanced options
   const [temperature, setTemperature] = useState(0.7)
   const [maxTokens, setMaxTokens] = useState(2000)
   const [showSettings, setShowSettings] = useState(false)
 
   const models = [
-    { id: "gpt-4o", name: "GPT-4o", description: "OpenAI's most capable", multimodal: true, type: "chat" },
-    { id: "gpt-4o-mini", name: "GPT-4o Mini", description: "Fast and efficient", multimodal: true, type: "chat" },
-    { id: "gpt-5-chat-latest", name: "GPT-5 Chat", description: "Latest GPT model", multimodal: true, type: "chat" },
-    { id: "claude-opus-4-latest", name: "Claude Opus 4", description: "Most powerful Claude", multimodal: true, type: "chat" },
-    { id: "claude-sonnet-4-latest", name: "Claude Sonnet 4", description: "Balanced Claude", multimodal: true, type: "chat" },
-    { id: "claude-3-5-sonnet-latest", name: "Claude 3.5 Sonnet", description: "Latest Sonnet", multimodal: true, type: "chat" },
-    { id: "grok-3", name: "Grok 3", description: "Fast responses", multimodal: false, type: "chat" },
+    // OpenAI
+    { id: "gpt-4.1", name: "GPT-4.1", description: "Most capable OpenAI model", multimodal: true, type: "chat" },
+    { id: "gpt-4.1-mini", name: "GPT-4.1 Mini", description: "Fast and efficient", multimodal: true, type: "chat" },
+    { id: "gpt-4.1-nano", name: "GPT-4.1 Nano", description: "Ultra-fast, lightweight", multimodal: false, type: "chat" },
+    { id: "gpt-4o", name: "GPT-4o", description: "Great all-rounder", multimodal: true, type: "chat" },
+    { id: "o3-mini", name: "o3 Mini", description: "Advanced reasoning", multimodal: false, type: "chat" },
+    // Anthropic
+    { id: "claude-sonnet-4-20250514", name: "Claude Sonnet 4", description: "Latest balanced Claude", multimodal: true, type: "chat" },
+    { id: "claude-3-7-sonnet-latest", name: "Claude 3.7 Sonnet", description: "Extended thinking", multimodal: true, type: "chat" },
+    { id: "claude-3-5-haiku-latest", name: "Claude 3.5 Haiku", description: "Fast Claude", multimodal: true, type: "chat" },
+    // Google
+    { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash", description: "Google's fastest", multimodal: true, type: "chat" },
+    { id: "gemini-2.5-pro-preview-06-05", name: "Gemini 2.5 Pro", description: "Google's most capable", multimodal: true, type: "chat" },
+    // xAI
+    { id: "grok-3-mini-fast", name: "Grok 3 Mini Fast", description: "Quick responses", multimodal: false, type: "chat" },
+    // Meta
+    { id: "llama-4-maverick", name: "Llama 4 Maverick", description: "Meta's latest", multimodal: false, type: "chat" },
+    // Mistral
     { id: "mistral-large-latest", name: "Mistral Large", description: "Powerful Mistral", multimodal: false, type: "chat" },
-    { id: "mistral-medium-latest", name: "Mistral Medium", description: "Balanced Mistral", multimodal: false, type: "chat" },
-    { id: "gemini-1.5-flash", name: "Gemini 1.5 Flash", description: "Google's fast model", multimodal: true, type: "chat" }
+    // DeepSeek
+    { id: "deepseek-chat", name: "DeepSeek Chat", description: "Strong reasoning", multimodal: false, type: "chat" },
+    { id: "deepseek-r1", name: "DeepSeek R1", description: "Research model", multimodal: false, type: "chat" },
   ]
   
   // Check if current model supports files
   const isMultimodal = models.find(m => m.id === selectedModel)?.multimodal || false
 
   useEffect(() => {
-    checkUser()
-  }, [])
-
-
-  useEffect(() => {
     scrollToBottom()
   }, [messages])
-
-  const checkUser = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-      
-      if (user) {
-        const tier = user.user_metadata?.subscription_tier || 'free'
-        setUserTier(tier as SubscriptionTier)
-      }
-    } catch (error) {
-      console.error('Error checking user:', error)
-    }
-  }
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -122,19 +104,6 @@ function TestingPageContent() {
 
   const handleSendMessage = async () => {
     if ((!userInput.trim() && filePreview.length === 0) || isGenerating) return
-
-    // Check authentication
-    if (!user) {
-      alert('Please sign in to test prompts')
-      return
-    }
-
-    // Check model availability
-    if (!isModelAvailable(selectedModel, userTier)) {
-      alert(`The model "${selectedModel}" requires a Pro subscription`)
-      return
-    }
-
 
     if (!puterReady) {
       alert('AI system is still loading. Please wait a moment.')
@@ -340,11 +309,6 @@ function TestingPageContent() {
       return
     }
     
-    if (!user) {
-      alert('Please sign in to upload files')
-      return
-    }
-    
     setAttachedFiles(validFiles)
     setUploadingFiles(true)
     
@@ -360,7 +324,7 @@ function TestingPageContent() {
     const previews = await Promise.all(validFiles.map(async (file, index) => {
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('userId', user.id)
+      formData.append('userId', 'anonymous')
       
       try {
         const response = await fetch('/api/files/upload', {
@@ -434,23 +398,6 @@ function TestingPageContent() {
           <p className="text-muted-foreground">Test your AI prompts in real-time with different models</p>
         </div>
 
-        {!user && (
-          <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <AlertCircle className="h-5 w-5 text-amber-600" />
-                <div>
-                  <p className="font-medium">Sign In Required</p>
-                  <p className="text-sm text-muted-foreground">Please sign in to test prompts</p>
-                </div>
-              </div>
-              <Link href="/settings">
-                <Button size="sm">Sign In</Button>
-              </Link>
-            </div>
-          </div>
-        )}
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Panel - System Prompt & Settings */}
           <div className="space-y-4">
@@ -509,7 +456,7 @@ function TestingPageContent() {
               {showModelSelector && (
                 <div className="mt-2 space-y-1 max-h-[300px] overflow-y-auto">
                   {models.map(model => {
-                    const isAvailable = !user || isModelAvailable(model.id, userTier)
+                    const isAvailable = true
 
                     
                     return (
@@ -690,7 +637,7 @@ function TestingPageContent() {
             onDragOver={(e) => {
               e.preventDefault()
               e.stopPropagation()
-              if (isMultimodal && !isGenerating && user) {
+              if (isMultimodal && !isGenerating) {
                 setIsDragging(true)
               }
             }}
@@ -710,7 +657,7 @@ function TestingPageContent() {
               e.stopPropagation()
               setIsDragging(false)
               
-              if (!isMultimodal || isGenerating || !user) return
+              if (!isMultimodal || isGenerating) return
               
               const files = Array.from(e.dataTransfer.files)
               if (files.length > 0 && fileInputRef.current) {
@@ -889,12 +836,12 @@ function TestingPageContent() {
                         accept="image/*,video/*"
                         onChange={handleFileUpload}
                         className="hidden"
-                        disabled={isGenerating || !user}
+                        disabled={isGenerating}
                       />
                       <label
                         htmlFor="file-upload"
                         className={`inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 h-10 px-4 py-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground cursor-pointer ${
-                          isGenerating || !user || uploadingFiles ? 'opacity-50 cursor-not-allowed' : ''
+                          isGenerating || uploadingFiles ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
                       >
                         <Paperclip className="h-4 w-4" />
@@ -914,11 +861,11 @@ function TestingPageContent() {
                         : "Type your message..."
                     }
                     className="flex-1 min-h-[60px] max-h-[120px]"
-                    disabled={isGenerating || !user}
+                    disabled={isGenerating}
                   />
                   <Button
                     onClick={handleSendMessage}
-                    disabled={(!userInput.trim() && filePreview.length === 0) || isGenerating || !user}
+                    disabled={(!userInput.trim() && filePreview.length === 0) || isGenerating}
                     className="px-6"
                   >
                     {isGenerating ? (

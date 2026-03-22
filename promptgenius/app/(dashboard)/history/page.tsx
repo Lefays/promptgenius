@@ -4,8 +4,6 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { getPrompts, deletePrompt as deletePromptFromDB, type Prompt } from "@/lib/supabase/prompts"
-import { supabase } from "@/lib/supabase/client"
 import {
   History,
   Copy,
@@ -19,9 +17,20 @@ import {
   Loader2
 } from "lucide-react"
 
-interface GeneratedPrompt extends Prompt {
-  prompt: string // Alias for content
-  timestamp: Date | string // Alias for created_at
+interface GeneratedPrompt {
+  id: string
+  prompt: string
+  content?: string
+  model: string
+  user_input?: string | null
+  style?: string | null
+  format?: string | null
+  temperature?: number | null
+  max_tokens?: number | null
+  has_image?: boolean
+  created_at?: string
+  updated_at?: string
+  timestamp: Date | string
 }
 
 export default function HistoryPage() {
@@ -32,49 +41,16 @@ export default function HistoryPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedPrompt, setSelectedPrompt] = useState<GeneratedPrompt | null>(null)
   const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
   const itemsPerPage = 10
 
   useEffect(() => {
-    checkUserAndLoadHistory()
+    loadLocalHistory()
   }, [])
-  
-  const checkUserAndLoadHistory = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    setUser(user)
-    if (user) {
-      await loadHistory()
-    } else {
-      // Load from localStorage for non-authenticated users
-      loadLocalHistory()
-    }
-  }
 
   useEffect(() => {
     filterHistory()
   }, [history, searchTerm, selectedModel])
 
-  const loadHistory = async () => {
-    setLoading(true)
-    try {
-      const prompts = await getPrompts(100) // Load up to 100 prompts
-      // Convert Supabase format to our format
-      const formattedHistory = prompts.map(p => ({
-        ...p,
-        prompt: p.prompt || p.content || '',  // Use prompt field from DB
-        timestamp: p.created_at ? new Date(p.created_at) : new Date(),
-        userInput: p.user_input
-      }))
-      setHistory(formattedHistory)
-    } catch (error) {
-      console.error('Error loading history:', error)
-      // Fallback to localStorage
-      loadLocalHistory()
-    } finally {
-      setLoading(false)
-    }
-  }
-  
   const loadLocalHistory = () => {
     const savedHistory = localStorage.getItem('prompt_history')
     if (savedHistory) {
@@ -118,41 +94,18 @@ export default function HistoryPage() {
     setCurrentPage(1)
   }
 
-  const deletePrompt = async (id: string) => {
-    if (user && id) {
-      // Delete from Supabase
-      const success = await deletePromptFromDB(id)
-      if (success) {
-        const updatedHistory = history.filter(item => item.id !== id)
-        setHistory(updatedHistory)
-        if (selectedPrompt?.id === id) {
-          setSelectedPrompt(null)
-        }
-      }
-    } else {
-      // Delete from localStorage
-      const updatedHistory = history.filter(item => item.id !== id)
-      setHistory(updatedHistory)
-      localStorage.setItem('prompt_history', JSON.stringify(updatedHistory))
-      if (selectedPrompt?.id === id) {
-        setSelectedPrompt(null)
-      }
+  const deletePrompt = (id: string) => {
+    const updatedHistory = history.filter(item => item.id !== id)
+    setHistory(updatedHistory)
+    localStorage.setItem('prompt_history', JSON.stringify(updatedHistory))
+    if (selectedPrompt?.id === id) {
+      setSelectedPrompt(null)
     }
   }
 
-  const clearAllHistory = async () => {
+  const clearAllHistory = () => {
     if (confirm('Are you sure you want to clear all history? This action cannot be undone.')) {
-      if (user) {
-        // Clear from Supabase
-        for (const prompt of history) {
-          if (prompt.id) {
-            await deletePromptFromDB(prompt.id)
-          }
-        }
-      } else {
-        // Clear from localStorage
-        localStorage.removeItem('prompt_history')
-      }
+      localStorage.removeItem('prompt_history')
       setHistory([])
       setFilteredHistory([])
       setSelectedPrompt(null)
@@ -263,7 +216,7 @@ export default function HistoryPage() {
               <Loader2 className="h-12 w-12 mx-auto text-muted-foreground mb-4 animate-spin" />
               <h3 className="text-lg font-semibold mb-2">Loading your prompts...</h3>
               <p className="text-muted-foreground">
-                {user ? "Fetching from cloud storage" : "Loading from local storage"}
+                Loading from local storage
               </p>
             </div>
           ) : filteredHistory.length === 0 ? (

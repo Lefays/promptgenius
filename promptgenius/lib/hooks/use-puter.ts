@@ -58,6 +58,7 @@ export function usePuter() {
       format: string
       temperature: number
       maxTokens: number
+      antiPrompt?: string
     }
   ) => {
     if (!puterReady || !window.puter) {
@@ -84,6 +85,7 @@ Format: ${options.format}
 Temperature: ${options.temperature} (0=precise, 1=creative)
 Max Tokens: ${options.maxTokens}
 Task Description: "${userInput || 'General assistance'}"
+${options.antiPrompt ? `\n**THINGS TO AVOID (Anti-Prompt):**\n${options.antiPrompt}\n\nIMPORTANT: The generated prompt MUST explicitly instruct the AI to avoid the above items.` : ''}
 
 **PROMPT STRUCTURE TO FOLLOW:**
 1. Begin with direct role assignment ("You are a/an..." or direct task statement)

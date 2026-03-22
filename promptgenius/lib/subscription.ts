@@ -26,16 +26,21 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
     ],
     rateLimit: null,
     models: [
+      'gpt-4.1',
+      'gpt-4.1-mini',
+      'gpt-4.1-nano',
       'gpt-4o',
-      'gpt-4o-mini',
-      'gpt-5-chat-latest',
-      'claude-opus-4-latest',
-      'claude-sonnet-4-latest',
-      'claude-3-5-sonnet-latest',
-      'grok-3',
+      'o3-mini',
+      'claude-sonnet-4-20250514',
+      'claude-3-7-sonnet-latest',
+      'claude-3-5-haiku-latest',
+      'gemini-2.0-flash',
+      'gemini-2.5-pro-preview-06-05',
+      'grok-3-mini-fast',
+      'llama-4-maverick',
       'mistral-large-latest',
-      'mistral-medium-latest',
-      'gemini-1.5-flash'
+      'deepseek-chat',
+      'deepseek-r1'
     ]
   }
 }
